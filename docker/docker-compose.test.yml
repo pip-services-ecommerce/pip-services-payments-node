@@ -1,0 +1,21 @@
+version: '3.3'
+
+services:
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test
+    image: ${IMAGE:-test}
+    links:
+      - mongo
+    #  - couchbase
+    environment:
+      - MONGO_SERVICE_HOST=mongo
+      - MONGO_SERVICE_PORT=27017
+      - MONGO_DB=test
+
+  mongo:
+    image: mongo:latest
+
+  #couchbase:
+  #  image: couchbase/server-sandbox:6.0.1

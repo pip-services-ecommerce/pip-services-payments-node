@@ -1,0 +1,22 @@
+# Start with the Node.js 8 image
+FROM node:8
+
+# Set a working directory
+WORKDIR /app
+
+# Copy the project file
+COPY package*.json ./
+
+# Install ALL node_modules, including 'devDependencies'
+RUN npm install
+
+# Copy the entire project
+COPY . .
+
+# Specify the command for running tests
+# For Couchbase tests, use "delay_test"
+CMD [ "npm", "test" ]
+# CMD [ "npm", "run", "delay_test" ]
+
+# Remove the npmrc file, because env variable NPM_TOKEN is set for travis projects
+RUN rm -f ./.npmrc

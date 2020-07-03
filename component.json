@@ -1,0 +1,6 @@
+{
+    "name": "pip-services-payments-node",
+    "registry": "pip-services",
+    "version": "1.0.0",
+    "build": "0"
+}

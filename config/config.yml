@@ -1,0 +1,74 @@
+---
+# Container descriptor
+- descriptor: "pip-services:context-info:default:default:1.0"
+  name: "payments"
+  description: "Payments microservice from Pip.Services library"
+
+# Console logger
+- descriptor: "pip-services:logger:console:default:1.0"
+  level: "trace"
+
+# Perfomance counter that post values to log
+- descriptor: "pip-services:counters:log:default:1.0"
+
+{{#if MEMORY_ENABLED}}
+# In-memory persistence. Use only for testing!
+- descriptor: "pip-services-payments:persistence:memory:default:1.0"
+{{/if}}
+
+{{#if MONGO_ENABLED}}
+# Practice Content MongoDb persistence
+- descriptor: "pip-services-payments:persistence:mongodb:default:1.0"
+  collection: {{MONGO_COLLECTION_PAYMENTS}}{{^MONGO_COLLECTION_PAYMENTS}}payments{{/MONGO_COLLECTION_PAYMENTS}}
+  connection:
+    uri: {{MONGO_SERVICE_URI}}
+    host: {{MONGO_SERVICE_HOST}}{{#unless MONGO_SERVICE_HOST}}"localhost"{{/unless}}
+    port: {{MONGO_SERVICE_PORT}}{{#unless MONGO_SERVICE_PORT}}27017{{/unless}}
+    database: {{MONGO_DB}}{{#unless MONGO_DB}}"test"{{/unless}}
+{{/if}}
+
+{{#unless MEMORY_ENABLED}}{{#unless MONGO_ENABLED}}
+# Default to in-memory persistence, if nothing is set
+- descriptor: "pip-services-payments:persistence:memory:default:1.0"
+{{/unless}}{{/unless}}
+
+# Controller
+- descriptor: "pip-services-payments:controller:default:default:1.0"
+
+# PayPal platform
+- descriptor: "pip-services-payments:platform:paypal:default:1.0"
+  options:
+    sandbox: true
+  credential:
+    access_id: "AbYXkHiCD2J5igzO9VuS_eInDfmNsJAPnYKTUgW3Damma2cCILnd-mU3r1ZgVKn_GBi840nz64qDL2WW"
+    access_key: "EIBsI4QYghDPFyEiuAw6TkFq0emoTHQTX5kPXChfQvv8tkJ8-3mPXnRGWMjangHR8dhh28GL9bYYug-q"
+
+# Stripe platform
+- descriptor: "pip-services-payments:platform:stripe:default:1.0"
+  options:
+    timeout: 80000
+  credential:
+    access_key: "sk_test_51GxwMCIY0H5OlfLSYiWMCZwNIEOPcBtIYhA3ruazc04YBVTmqsn1MeaTVJmGMFtGpt8zhJx6LF6wWuJOLo1UgtnP00ts7d51Df" 
+      
+# Orders HTTP client
+- descriptor: "pip-services-orders:client:http:default:*"
+  connection:
+    protocol: {{ORDERS_SERVICE_PROTOCOL}}{{^ORDERS_SERVICE_PROTOCOL}}http{{/ORDERS_SERVICE_PROTOCOL}}
+    host: {{ORDERS_SERVICE_HOST}}{{^ORDERS_SERVICE_HOST}}localhost{{/ORDERS_SERVICE_HOST}}
+    port: {{ORDERS_SERVICE_PORT}}{{^ORDERS_SERVICE_PORT}}8088{{/ORDERS_SERVICE_PORT}}
+
+# Common HTTP endpoint
+- descriptor: "pip-services:endpoint:http:default:1.0"
+  connection:
+    protocol: http
+    host: 0.0.0.0
+    port: {{HTTP_PORT}}{{#unless HTTP_PORT}}8080{{/unless}}
+
+# HTTP endpoint service version 1.0
+- descriptor: "pip-services-payments:service:http:default:1.0"
+
+# Hearbeat service
+- descriptor: "pip-services:heartbeat-service:http:default:1.0"
+
+# Status service
+- descriptor: "pip-services:status-service:http:default:1.0"
