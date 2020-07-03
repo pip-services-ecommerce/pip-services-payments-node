@@ -1,6 +1,7 @@
 declare class PayPalOrder {
     id?: string;
     create_time?: Date;
+    intent: string;
     application_context: ApplicationContext;
     purchase_units: PurchaseUnit[];
 }

@@ -5,6 +5,7 @@ import { CredentialParams, CredentialResolver } from 'pip-services3-components-n
 import { IPaymentPlatform } from './IPaymentPlatform';
 import { OrderV1, PaymentV1, PaymentStatusV1 } from '../../data/version1';
 import { ConfigParams } from 'pip-services3-commons-node';
+import { rejects } from 'assert';
 
 export class PayPalPlatform implements IPaymentPlatform {
 
@@ -41,8 +42,7 @@ export class PayPalPlatform implements IPaymentPlatform {
             this._credentials = result;
         });
 
-        if (error != null)
-        {
+        if (error != null) {
             if (callback) callback(error);
             return;
         }
@@ -55,7 +55,7 @@ export class PayPalPlatform implements IPaymentPlatform {
             : new this._checkoutNodeJssdk.core.LiveEnvironment(clientId, clientSecret);
 
         this._client = new this._checkoutNodeJssdk.core.PayPalHttpClient(environment);
-        
+
         if (callback) callback(null);
     }
 
@@ -68,7 +68,12 @@ export class PayPalPlatform implements IPaymentPlatform {
         callback: (err: any) => void): void {
 
         this.createOrder(payment, order)
-            .then(() => callback(null))
+            .then(() => callback(null),
+                (err) => {
+                    payment.status = PaymentStatusV1.ErrorCreateOrder;
+                    callback(err)
+                }
+            )
             .catch((err) => {
                 payment.status = PaymentStatusV1.ErrorCreateOrder;
                 callback(err)
@@ -94,20 +99,26 @@ export class PayPalPlatform implements IPaymentPlatform {
     }
 
     private async createOrder(payment: PaymentV1, order: OrderV1): Promise<void> {
-        let payOrder = this.createPayPalOrder(order);
+        try {
+            let payOrder = this.createPayPalOrder(order);
 
-        const request = new this._checkoutNodeJssdk.orders.OrdersCreateRequest();
-        request.headers["prefer"] = "return=representation";
-        request.requestBody(payOrder);
+            const request = new this._checkoutNodeJssdk.orders.OrdersCreateRequest();
+            request.headers["prefer"] = "return=representation";
+            request.requestBody(payOrder);
 
-        const response = await this._client.execute(request);
+            const response = await this._client.execute(request);
 
-        if (response.statusCode === 201) {
-            payment.platform_data.order_id = response.result.id;
-            payment.platform_data.confirmData = response.result.links.filter((item: { rel: string; }) => item.rel === "approve")[0].href;
-            payment.status = PaymentStatusV1.Unconfirmed;
+            if (response.statusCode === 201) {
+                payment.platform_data.order_id = response.result.id;
+                payment.platform_data.confirmData = response.result.links.filter((item: { rel: string; }) => item.rel === "approve")[0].href;
+                payment.status = PaymentStatusV1.Unconfirmed;
 
-            console.log("Created Successfully\n");
+                console.log("Created Successfully\n");
+            }
+        }
+        catch (ex) {
+            console.error(ex);
+            rejects(ex);
         }
     }
 
@@ -161,6 +172,7 @@ export class PayPalPlatform implements IPaymentPlatform {
     private createPayPalOrder(order: OrderV1): PayPalOrder {
         let payOrder: PayPalOrder =
         {
+            intent: "AUTHORIZE",
             application_context:
             {
                 user_action: 'CONTINUE',

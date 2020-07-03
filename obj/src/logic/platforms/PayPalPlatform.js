@@ -13,6 +13,7 @@ let _ = require('lodash');
 let async = require('async');
 const pip_services3_components_node_1 = require("pip-services3-components-node");
 const version1_1 = require("../../data/version1");
+const assert_1 = require("assert");
 class PayPalPlatform {
     constructor() {
         this._credentialsResolver = new pip_services3_components_node_1.CredentialResolver();
@@ -58,7 +59,10 @@ class PayPalPlatform {
     }
     makeCreditPayment(payment, order, callback) {
         this.createOrder(payment, order)
-            .then(() => callback(null))
+            .then(() => callback(null), (err) => {
+            payment.status = version1_1.PaymentStatusV1.ErrorCreateOrder;
+            callback(err);
+        })
             .catch((err) => {
             payment.status = version1_1.PaymentStatusV1.ErrorCreateOrder;
             callback(err);
@@ -82,16 +86,22 @@ class PayPalPlatform {
     }
     createOrder(payment, order) {
         return __awaiter(this, void 0, void 0, function* () {
-            let payOrder = this.createPayPalOrder(order);
-            const request = new this._checkoutNodeJssdk.orders.OrdersCreateRequest();
-            request.headers["prefer"] = "return=representation";
-            request.requestBody(payOrder);
-            const response = yield this._client.execute(request);
-            if (response.statusCode === 201) {
-                payment.platform_data.order_id = response.result.id;
-                payment.platform_data.confirmData = response.result.links.filter((item) => item.rel === "approve")[0].href;
-                payment.status = version1_1.PaymentStatusV1.Unconfirmed;
-                console.log("Created Successfully\n");
+            try {
+                let payOrder = this.createPayPalOrder(order);
+                const request = new this._checkoutNodeJssdk.orders.OrdersCreateRequest();
+                request.headers["prefer"] = "return=representation";
+                request.requestBody(payOrder);
+                const response = yield this._client.execute(request);
+                if (response.statusCode === 201) {
+                    payment.platform_data.order_id = response.result.id;
+                    payment.platform_data.confirmData = response.result.links.filter((item) => item.rel === "approve")[0].href;
+                    payment.status = version1_1.PaymentStatusV1.Unconfirmed;
+                    console.log("Created Successfully\n");
+                }
+            }
+            catch (ex) {
+                console.error(ex);
+                assert_1.rejects(ex);
             }
         });
     }
@@ -141,6 +151,7 @@ class PayPalPlatform {
     }
     createPayPalOrder(order) {
         let payOrder = {
+            intent: "AUTHORIZE",
             application_context: {
                 user_action: 'CONTINUE',
                 cancel_url: 'https://www.example.com',

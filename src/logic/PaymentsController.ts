@@ -64,6 +64,7 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
 
         return this._commandSet;
     }
+    
     public isOpen(): boolean {
         return this._paypalPlatform != null || this._stripePlatform != null;
     }
