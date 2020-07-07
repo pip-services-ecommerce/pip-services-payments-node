@@ -12,29 +12,33 @@ var lastTime = new Date();
 lastTime.setTime(now.getTime() + 1000);
 
 const PAYMENT1: PaymentV1 = {
-    id: '1',
+    id: IdGenerator.nextLong(),
     method_id: null,
     order_id: 'order-981273',
     status: PaymentStatusV1.Unconfirmed,
     type: PaymentTypesV1.Credit,
     platform_data: {
         capture_id: 'capture-8978972',
-        confirmData: 'http://sandbox.paypal.com/1231',
+        confirm_data: 'http://sandbox.paypal.com/1231',
         order_id: 'order-12312312',
+        order_amount: 100,
+        order_currency: 'USD',
         platform_id: 'paypal'
     }
 };
 
 const PAYMENT2: PaymentV1 = {
-    id: '2',
+    id: IdGenerator.nextLong(),
     method_id: 'method-897128731',
     order_id: 'order-981273',
-    status: PaymentStatusV1.Captured,
+    status: PaymentStatusV1.Confirmed,
     type: PaymentTypesV1.Credit,
     platform_data: {
         capture_id: 'capture-0-89978973',
-        confirmData: 'http://sandbox.paypal.com/098123',
+        confirm_data: 'http://sandbox.paypal.com/098123',
         order_id: 'order-7866712',
+        order_amount: 100,
+        order_currency: 'USD',
         platform_id: 'paypal'
     }
 };
@@ -165,7 +169,7 @@ export class PaymentsPersistenceFixture {
                 this._paymentsPersistence.getPageByFilter(
                     null,
                     FilterParams.fromTuples(
-                        'id', '1'
+                        'id', PAYMENT1.id
                     ),
                     new PagingParams(),
                     (err, page) => {
@@ -193,7 +197,7 @@ export class PaymentsPersistenceFixture {
         assert.isObject(actual.platform_data);
 
         assert.equal(expected.platform_data.capture_id, actual.platform_data.capture_id);
-        assert.equal(expected.platform_data.confirmData, actual.platform_data.confirmData);
+        assert.equal(expected.platform_data.confirm_data, actual.platform_data.confirm_data);
         assert.equal(expected.platform_data.order_id, actual.platform_data.order_id);
         assert.equal(expected.platform_data.platform_id, actual.platform_data.platform_id);
     }

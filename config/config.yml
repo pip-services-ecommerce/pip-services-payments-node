@@ -40,22 +40,15 @@
   options:
     sandbox: true
   credential:
-    access_id: "AbYXkHiCD2J5igzO9VuS_eInDfmNsJAPnYKTUgW3Damma2cCILnd-mU3r1ZgVKn_GBi840nz64qDL2WW"
-    access_key: "EIBsI4QYghDPFyEiuAw6TkFq0emoTHQTX5kPXChfQvv8tkJ8-3mPXnRGWMjangHR8dhh28GL9bYYug-q"
+    access_id: "{{PAYPAL_ACCESS_ID}}"
+    access_key: "{{PAYPAL_ACCESS_KEY}}"
 
 # Stripe platform
 - descriptor: "pip-services-payments:platform:stripe:default:1.0"
   options:
     timeout: 80000
   credential:
-    access_key: "sk_test_51GxwMCIY0H5OlfLSYiWMCZwNIEOPcBtIYhA3ruazc04YBVTmqsn1MeaTVJmGMFtGpt8zhJx6LF6wWuJOLo1UgtnP00ts7d51Df" 
-      
-# Orders HTTP client
-- descriptor: "pip-services-orders:client:http:default:*"
-  connection:
-    protocol: {{ORDERS_SERVICE_PROTOCOL}}{{^ORDERS_SERVICE_PROTOCOL}}http{{/ORDERS_SERVICE_PROTOCOL}}
-    host: {{ORDERS_SERVICE_HOST}}{{^ORDERS_SERVICE_HOST}}localhost{{/ORDERS_SERVICE_HOST}}
-    port: {{ORDERS_SERVICE_PORT}}{{^ORDERS_SERVICE_PORT}}8088{{/ORDERS_SERVICE_PORT}}
+    access_key: "{{STRIPE_ACCESS_KEY}}" 
 
 # Common HTTP endpoint
 - descriptor: "pip-services:endpoint:http:default:1.0"

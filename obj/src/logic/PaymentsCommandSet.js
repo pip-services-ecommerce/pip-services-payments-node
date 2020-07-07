@@ -4,6 +4,7 @@ const pip_services3_commons_node_1 = require("pip-services3-commons-node");
 const pip_services3_commons_node_2 = require("pip-services3-commons-node");
 const pip_services3_commons_node_3 = require("pip-services3-commons-node");
 const pip_services3_commons_node_4 = require("pip-services3-commons-node");
+const version1_1 = require("../data/version1");
 class PaymentsCommandSet extends pip_services3_commons_node_1.CommandSet {
     constructor(controller) {
         super();
@@ -16,12 +17,12 @@ class PaymentsCommandSet extends pip_services3_commons_node_1.CommandSet {
     makeMakeCreditPaymentCommand() {
         return new pip_services3_commons_node_2.Command('make_credit_payment', new pip_services3_commons_node_3.ObjectSchema(true)
             .withRequiredProperty('platform_id', pip_services3_commons_node_4.TypeCode.String)
-            .withRequiredProperty('order_id', pip_services3_commons_node_4.TypeCode.String)
-            .withOptionalProperty('method_id', pip_services3_commons_node_4.TypeCode.String), (correlationId, args, callback) => {
+            .withOptionalProperty('method_id', pip_services3_commons_node_4.TypeCode.String)
+            .withRequiredProperty('order', new version1_1.OrderV1Schema()), (correlationId, args, callback) => {
             let platformId = args.getAsString('platform_id');
-            let orderId = args.getAsString('order_id');
-            let methodId = args.getAsString('method_id');
-            this._controller.makeCreditPayment(correlationId, platformId, orderId, methodId, callback);
+            let methodId = args.getAsNullableString('method_id');
+            let order = args.getAsObject('order');
+            this._controller.makeCreditPayment(correlationId, platformId, methodId, order, callback);
         });
     }
     makeConfirmCreditPaymentCommand() {

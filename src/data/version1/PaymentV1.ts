@@ -10,5 +10,4 @@ export class PaymentV1 implements IStringIdentifiable {
     public platform_data: PlatformDataV1;
 
     public status: string;
-    
 }

@@ -7,5 +7,5 @@ export interface IPaymentPlatform extends IOpenable, IConfigurable
     makeCreditPayment(payment: PaymentV1, order: OrderV1, callback: (err: any) => void): void;
     confirmCreditPayment(payment: PaymentV1, callback: (err: any) => void): void;
 
-    cancelCreditPayment(payment: PaymentV1, order: OrderV1, callback: (err: any) => void): void;
+    cancelCreditPayment(payment: PaymentV1, callback: (err: any) => void): void;
 }

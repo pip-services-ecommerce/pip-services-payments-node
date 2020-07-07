@@ -12,13 +12,11 @@ import { PaymentV1, OrderV1, PaymentTypesV1, PaymentStatusV1 } from '../data/ver
 import { IPaymentsPersistence } from '../persistence';
 import { IPaymentsController } from './IPaymentsController';
 import { PaymentsCommandSet } from './PaymentsCommandSet';
-import { CompositeLogger, CredentialResolver, CredentialParams } from 'pip-services3-components-node';
+import { CompositeLogger } from 'pip-services3-components-node';
 import { IPaymentPlatform } from './platforms';
 import { PlatformDataV1 } from '../data/version1/PlatformDataV1';
-import { OrdersConnector } from './OrdersConnector';
 
 export class PaymentsController implements IPaymentsController, IConfigurable, IOpenable, IReferenceable, ICommandable {
-    private _dependencyResolver: DependencyResolver = new DependencyResolver();
 
     private _persistence: IPaymentsPersistence;
     private _commandSet: PaymentsCommandSet;
@@ -26,20 +24,15 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
 
     private _paypalPlatform: IPaymentPlatform;
     private _stripePlatform: IPaymentPlatform;
-    private _ordersConnector: OrdersConnector;
 
     public constructor() {
-        this._dependencyResolver.put("orders", new Descriptor("pip-services-orders", "client", "*", "*", "1.0"));
     }
 
     public configure(config: ConfigParams): void {
-
-        this._dependencyResolver.configure(config);
         this._logger.configure(config);
     }
 
     public setReferences(references: IReferences): void {
-        this._dependencyResolver.setReferences(references);
 
         this._persistence = references.getOneRequired<IPaymentsPersistence>(
             new Descriptor('pip-services-payments', 'persistence', '*', '*', '1.0')
@@ -52,9 +45,6 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
         this._stripePlatform = references.getOneOptional<IPaymentPlatform>(
             new Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0')
         );
-
-        let ordersClient: any = this._dependencyResolver.getOneRequired<any>("orders");
-        this._ordersConnector = new OrdersConnector(ordersClient);
     }
 
     public getCommandSet(): CommandSet {
@@ -64,7 +54,7 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
 
         return this._commandSet;
     }
-    
+
     public isOpen(): boolean {
         return this._paypalPlatform != null || this._stripePlatform != null;
     }
@@ -97,43 +87,40 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
         }
     }
 
-    public makeCreditPayment(correlationId: string, platformId: string, orderId: string, methodId: string,
+    public makeCreditPayment(correlationId: string, platformId: string, methodId: string, order: OrderV1,
         callback: (err: any, payment: PaymentV1) => void): void {
 
-        //  1. Create new payment object   
         let payment: PaymentV1 = new PaymentV1();
         payment.id = IdGenerator.nextLong();
-        payment.order_id = orderId;
+        payment.order_id = order.id;
         payment.method_id = methodId;
         payment.platform_data = new PlatformDataV1(platformId);
         payment.type = PaymentTypesV1.Credit;
         payment.status = PaymentStatusV1.Created;
 
-        this._persistence.create(correlationId, payment, callback);
-
-        //  2. Get order by id with items list
-        var orderV1: OrderV1;
-        this._ordersConnector.getOrderById(correlationId, orderId, (err, res) => {
+        this._persistence.create(correlationId, payment, (err, res) => {
             if (err != null) {
                 callback(err, null);
                 return;
             }
-            orderV1 = res;
+
+            payment = res;
         });
 
-        //  3. Create payment and send    
         var platform = this.getPaymentPlatformById(platformId);
-
         if (platform != null) {
-            platform.makeCreditPayment(payment, orderV1, (err) => {
-                if (err != null) {
+            platform.makeCreditPayment(payment, order, (err) => {
+                if (err != null && callback) {
                     callback(err, null);
                     return;
                 }
+
+                this._persistence.update(correlationId, payment, callback);       
             });
         }
-
-        this._persistence.update(correlationId, payment, callback);
+        else {
+            if (callback) callback(null, payment);
+        }
     }
 
     public confirmCreditPayment(correlationId: string, paymentId: string,
@@ -179,8 +166,15 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
     }
 
     public makeDebitPayment(correlationId: string, platformId: string, transactionId: string, destinationAccount: string,
-        callback: (err: any, paymentId: string) => void): void {
-        callback(null, IdGenerator.nextLong());
+        callback: (err: any, payment: PaymentV1) => void): void {
+
+        let payment: PaymentV1 = new PaymentV1();
+        payment.id = IdGenerator.nextLong();
+        payment.platform_data = new PlatformDataV1(platformId);
+        payment.type = PaymentTypesV1.Debit;
+        payment.status = PaymentStatusV1.Created;
+
+        this._persistence.create(correlationId, payment, callback);
     }
 
     public cancelPayment(correlationId: string, paymentId: string,
@@ -188,16 +182,11 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
         let payment: PaymentV1 = this.getPaymentById(correlationId, paymentId, callback);
 
         if (payment != null && payment.type == PaymentTypesV1.Credit) {
-            var orderV1: OrderV1;
-            this._ordersConnector.getOrderById(correlationId, payment.order_id, (err, res) => {
-                if (err != null) throw err;
-                orderV1 = res;
-            });
 
             var platform = this.getPaymentPlatformById(payment.platform_data.platform_id);
 
             if (platform != null) {
-                platform.cancelCreditPayment(payment, orderV1, (err) => {
+                platform.cancelCreditPayment(payment, (err) => {
                     if (err != null) {
                         callback(err, null);
                         return;

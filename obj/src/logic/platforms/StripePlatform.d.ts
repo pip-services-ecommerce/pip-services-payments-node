@@ -6,6 +6,7 @@ export declare class StripePlatform implements IPaymentPlatform {
     private _credentials;
     private _client;
     private _stripeOptions;
+    private _autoConfirm;
     constructor();
     configure(config: ConfigParams): void;
     isOpen(): boolean;
@@ -13,5 +14,7 @@ export declare class StripePlatform implements IPaymentPlatform {
     close(correlationId: string, callback?: (err: any) => void): void;
     makeCreditPayment(payment: PaymentV1, order: OrderV1, callback: (err: any, response: any) => void): void;
     confirmCreditPayment(payment: PaymentV1, callback: (err: any, response: any) => void): void;
-    cancelCreditPayment(payment: PaymentV1, order: OrderV1, callback: (err: any, result: boolean) => void): void;
+    cancelCreditPayment(payment: PaymentV1, callback: (err: any, result: boolean) => void): void;
+    private makeCreditPaymentAsync;
+    private confirmCreditPaymentAsync;
 }

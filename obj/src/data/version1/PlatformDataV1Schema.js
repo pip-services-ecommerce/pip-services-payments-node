@@ -7,7 +7,7 @@ class PlatformDataV1Schema extends pip_services3_commons_node_1.ObjectSchema {
         super();
         this.withOptionalProperty('platform_id', pip_services3_commons_node_2.TypeCode.String);
         this.withOptionalProperty('order_id', pip_services3_commons_node_2.TypeCode.String);
-        this.withOptionalProperty('confirmData', pip_services3_commons_node_2.TypeCode.String);
+        this.withOptionalProperty('confirm_data', pip_services3_commons_node_2.TypeCode.String);
         this.withOptionalProperty('capture_id', pip_services3_commons_node_2.TypeCode.String);
     }
 }

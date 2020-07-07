@@ -3,9 +3,9 @@ export declare class PaymentStatusV1 {
     static Unconfirmed: string;
     static Canceled: string;
     static Authorized: string;
-    static Captured: string;
+    static Confirmed: string;
     static ErrorCreateOrder: string;
-    static ErrorCapture: string;
+    static ErrorConfirm: string;
     static ErrorAuthorize: string;
     static ErrorCancel: string;
 }

@@ -6,6 +6,7 @@ import { TypeCode } from 'pip-services3-commons-node';
 import { Parameters } from 'pip-services3-commons-node';
 
 import { IPaymentsController } from './IPaymentsController';
+import { OrderV1Schema } from '../data/version1';
 
 export class PaymentsCommandSet extends CommandSet {
     private _controller: IPaymentsController;
@@ -26,13 +27,13 @@ export class PaymentsCommandSet extends CommandSet {
             'make_credit_payment',
             new ObjectSchema(true)
                 .withRequiredProperty('platform_id', TypeCode.String)
-                .withRequiredProperty('order_id', TypeCode.String)
-                .withOptionalProperty('method_id', TypeCode.String),
+                .withOptionalProperty('method_id', TypeCode.String)
+                .withRequiredProperty('order', new OrderV1Schema()),
             (correlationId: string, args: Parameters, callback: (err: any, result: any) => void) => {
                 let platformId = args.getAsString('platform_id');
-                let orderId = args.getAsString('order_id');
-                let methodId = args.getAsString('method_id');
-                this._controller.makeCreditPayment(correlationId, platformId, orderId, methodId, callback);
+                let methodId = args.getAsNullableString('method_id');
+                let order = args.getAsObject('order');
+                this._controller.makeCreditPayment(correlationId, platformId, methodId, order, callback);
             }
         );
     }

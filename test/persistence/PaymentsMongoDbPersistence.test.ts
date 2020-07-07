@@ -5,7 +5,7 @@ import { ConfigParams, References, Descriptor } from 'pip-services3-commons-node
 import { PaymentsMongoDbPersistence } from '../../src/persistence';
 import { PaymentsPersistenceFixture } from './PaymentsPersistenceFixture';
 
-suite('MongoDbPersistence', () => {
+suite('PaymentsMongoDbPersistence', () => {
     let paymentsPersistence: PaymentsMongoDbPersistence;
     let paymentsFixture: PaymentsPersistenceFixture;
 

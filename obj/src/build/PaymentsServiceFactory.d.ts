@@ -5,7 +5,6 @@ export declare class PaymentsServiceFactory extends Factory {
     static PaymentsMongoDbPersistenceDescriptor: Descriptor;
     static ControllerDescriptor: Descriptor;
     static HttpServiceV1Descriptor: Descriptor;
-    static OrdersHttpClientV1Descriptor: Descriptor;
     static PayPalPlatformDescriptor: Descriptor;
     static StripePlatformDescriptor: Descriptor;
     constructor();

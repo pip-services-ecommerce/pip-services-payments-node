@@ -7,24 +7,17 @@ const version1_1 = require("../data/version1");
 const PaymentsCommandSet_1 = require("./PaymentsCommandSet");
 const pip_services3_components_node_1 = require("pip-services3-components-node");
 const PlatformDataV1_1 = require("../data/version1/PlatformDataV1");
-const OrdersConnector_1 = require("./OrdersConnector");
 class PaymentsController {
     constructor() {
-        this._dependencyResolver = new pip_services3_commons_node_1.DependencyResolver();
         this._logger = new pip_services3_components_node_1.CompositeLogger();
-        this._dependencyResolver.put("orders", new pip_services3_commons_node_2.Descriptor("pip-services-orders", "client", "*", "*", "1.0"));
     }
     configure(config) {
-        this._dependencyResolver.configure(config);
         this._logger.configure(config);
     }
     setReferences(references) {
-        this._dependencyResolver.setReferences(references);
         this._persistence = references.getOneRequired(new pip_services3_commons_node_2.Descriptor('pip-services-payments', 'persistence', '*', '*', '1.0'));
         this._paypalPlatform = references.getOneOptional(new pip_services3_commons_node_2.Descriptor('pip-services-payments', 'platform', 'paypal', '*', '1.0'));
         this._stripePlatform = references.getOneOptional(new pip_services3_commons_node_2.Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0'));
-        let ordersClient = this._dependencyResolver.getOneRequired("orders");
-        this._ordersConnector = new OrdersConnector_1.OrdersConnector(ordersClient);
     }
     getCommandSet() {
         if (this._commandSet == null) {
@@ -60,36 +53,35 @@ class PaymentsController {
             });
         }
     }
-    makeCreditPayment(correlationId, platformId, orderId, methodId, callback) {
-        //  1. Create new payment object   
+    makeCreditPayment(correlationId, platformId, methodId, order, callback) {
         let payment = new version1_1.PaymentV1();
         payment.id = pip_services3_commons_node_1.IdGenerator.nextLong();
-        payment.order_id = orderId;
+        payment.order_id = order.id;
         payment.method_id = methodId;
         payment.platform_data = new PlatformDataV1_1.PlatformDataV1(platformId);
         payment.type = version1_1.PaymentTypesV1.Credit;
         payment.status = version1_1.PaymentStatusV1.Created;
-        this._persistence.create(correlationId, payment, callback);
-        //  2. Get order by id with items list
-        var orderV1;
-        this._ordersConnector.getOrderById(correlationId, orderId, (err, res) => {
+        this._persistence.create(correlationId, payment, (err, res) => {
             if (err != null) {
                 callback(err, null);
                 return;
             }
-            orderV1 = res;
+            payment = res;
         });
-        //  3. Create payment and send    
         var platform = this.getPaymentPlatformById(platformId);
         if (platform != null) {
-            platform.makeCreditPayment(payment, orderV1, (err) => {
-                if (err != null) {
+            platform.makeCreditPayment(payment, order, (err) => {
+                if (err != null && callback) {
                     callback(err, null);
                     return;
                 }
+                this._persistence.update(correlationId, payment, callback);
             });
         }
-        this._persistence.update(correlationId, payment, callback);
+        else {
+            if (callback)
+                callback(null, payment);
+        }
     }
     confirmCreditPayment(correlationId, paymentId, callback) {
         let payment = this.getPaymentById(correlationId, paymentId, callback);
@@ -124,20 +116,19 @@ class PaymentsController {
         }
     }
     makeDebitPayment(correlationId, platformId, transactionId, destinationAccount, callback) {
-        callback(null, pip_services3_commons_node_1.IdGenerator.nextLong());
+        let payment = new version1_1.PaymentV1();
+        payment.id = pip_services3_commons_node_1.IdGenerator.nextLong();
+        payment.platform_data = new PlatformDataV1_1.PlatformDataV1(platformId);
+        payment.type = version1_1.PaymentTypesV1.Debit;
+        payment.status = version1_1.PaymentStatusV1.Created;
+        this._persistence.create(correlationId, payment, callback);
     }
     cancelPayment(correlationId, paymentId, callback) {
         let payment = this.getPaymentById(correlationId, paymentId, callback);
         if (payment != null && payment.type == version1_1.PaymentTypesV1.Credit) {
-            var orderV1;
-            this._ordersConnector.getOrderById(correlationId, payment.order_id, (err, res) => {
-                if (err != null)
-                    throw err;
-                orderV1 = res;
-            });
             var platform = this.getPaymentPlatformById(payment.platform_data.platform_id);
             if (platform != null) {
-                platform.cancelCreditPayment(payment, orderV1, (err) => {
+                platform.cancelCreditPayment(payment, (err) => {
                     if (err != null) {
                         callback(err, null);
                         return;

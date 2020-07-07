@@ -1,4 +1,4 @@
-declare class PayPalOrder {
+export declare class PayPalOrder {
     id?: string;
     create_time?: Date;
     intent: string;
@@ -22,6 +22,11 @@ declare class AmountWithBreakdown {
     breakdown?: AmountBreakdown;
 }
 declare class AmountBreakdown {
+    item_total?: Money;
+    shipping?: Money;
+    handling?: Money;
+    tax_total?: Money;
+    shipping_discount?: Money;
 }
 declare class Item {
     name: string;
@@ -35,3 +40,4 @@ declare class Money {
     currency_code: string;
     value: string;
 }
+export {};

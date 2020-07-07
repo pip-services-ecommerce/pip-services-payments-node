@@ -1,4 +1,4 @@
-class PayPalOrder
+export class PayPalOrder
 {
     public id?: string;
     public create_time?: Date;
@@ -32,6 +32,11 @@ class AmountWithBreakdown
 
 class AmountBreakdown
 {
+    public item_total?: Money;
+    public shipping?: Money;
+    public handling?: Money;
+    public tax_total?: Money;
+    public shipping_discount?: Money;
 }
 
 class Item

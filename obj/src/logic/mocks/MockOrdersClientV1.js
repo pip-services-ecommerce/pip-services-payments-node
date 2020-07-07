@@ -6,15 +6,17 @@ class MockOrdersClientV1 {
         if (id == 'order-12312312')
             order =
                 {
-                    amount: '100.0',
+                    total: 100,
                     currency_code: 'USD',
+                    customer_id: 'cus_897123',
                     id: 'order-12312312'
                 };
         else if (id == 'order-7866712')
             order =
                 {
-                    amount: '100.0',
+                    total: 100,
                     currency_code: 'USD',
+                    customer_id: 'cus_7897324',
                     id: 'order-7866712'
                 };
         else

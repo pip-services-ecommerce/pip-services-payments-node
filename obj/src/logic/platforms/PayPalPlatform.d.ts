@@ -14,11 +14,11 @@ export declare class PayPalPlatform implements IPaymentPlatform {
     close(correlationId: string, callback: (err: any) => void): void;
     makeCreditPayment(payment: PaymentV1, order: OrderV1, callback: (err: any) => void): void;
     confirmCreditPayment(payment: PaymentV1, callback: (err: any, result: any) => void): void;
-    cancelCreditPayment(payment: PaymentV1, order: OrderV1, callback: (err: any) => void): void;
-    private createOrder;
-    private captureRefund;
-    private authorizeOrder;
-    private captureOrder;
+    cancelCreditPayment(payment: PaymentV1, callback: (err: any) => void): void;
+    private createOrderAsync;
+    private captureRefundAsync;
+    private authorizeOrderAsync;
+    private captureOrderAsync;
     private createPayPalOrder;
     private fromPublic;
 }
