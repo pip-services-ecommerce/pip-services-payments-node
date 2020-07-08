@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const version1_1 = require("../../data/version1");
 const pip_services3_components_node_1 = require("pip-services3-components-node");
 const stripe_1 = require("stripe");
-class StripePlatform {
+class StripeConnector {
     constructor() {
         this._credentialsResolver = new pip_services3_components_node_1.CredentialResolver();
         this._client = null;
@@ -133,7 +133,7 @@ class StripePlatform {
         });
     }
 }
-exports.StripePlatform = StripePlatform;
+exports.StripeConnector = StripeConnector;
 class StripeOptions {
     constructor(config) {
         /// The amount of times a request should be retried.
@@ -171,4 +171,4 @@ class StripeOptions {
         }
     }
 }
-//# sourceMappingURL=StripePlatform.js.map
+//# sourceMappingURL=StripeConnector.js.map

@@ -1,7 +1,7 @@
-import { IPaymentPlatform } from "./IPaymentPlatform";
+import { IPaymentsConnector } from "./IPaymentsConnector";
 import { PaymentV1, OrderV1 } from "../../data/version1";
 import { ConfigParams } from "pip-services3-commons-node";
-export declare class StripePlatform implements IPaymentPlatform {
+export declare class StripeConnector implements IPaymentsConnector {
     private _credentialsResolver;
     private _credentials;
     private _client;

@@ -14,8 +14,8 @@ class PaymentsServiceFactory extends pip_services3_components_node_1.Factory {
         this.registerAsType(PaymentsServiceFactory.PaymentsMongoDbPersistenceDescriptor, PaymentsMongoDbPersistence_1.PaymentsMongoDbPersistence);
         this.registerAsType(PaymentsServiceFactory.ControllerDescriptor, PaymentsController_1.PaymentsController);
         this.registerAsType(PaymentsServiceFactory.HttpServiceV1Descriptor, PaymentsHttpServiceV1_1.PaymentsHttpServiceV1);
-        this.registerAsType(PaymentsServiceFactory.PayPalPlatformDescriptor, platforms_1.PayPalPlatform);
-        this.registerAsType(PaymentsServiceFactory.StripePlatformDescriptor, platforms_1.StripePlatform);
+        this.registerAsType(PaymentsServiceFactory.PayPalConnectorDescriptor, platforms_1.PayPalConnector);
+        this.registerAsType(PaymentsServiceFactory.StripeConnectorDescriptor, platforms_1.StripeConnector);
     }
 }
 exports.PaymentsServiceFactory = PaymentsServiceFactory;
@@ -23,6 +23,6 @@ PaymentsServiceFactory.PaymentsMemoryPersistenceDescriptor = new pip_services3_c
 PaymentsServiceFactory.PaymentsMongoDbPersistenceDescriptor = new pip_services3_commons_node_1.Descriptor('pip-services-payments', 'persistence', 'mongodb', '*', '1.0');
 PaymentsServiceFactory.ControllerDescriptor = new pip_services3_commons_node_1.Descriptor('pip-services-payments', 'controller', 'default', '*', '1.0');
 PaymentsServiceFactory.HttpServiceV1Descriptor = new pip_services3_commons_node_1.Descriptor('pip-services-payments', 'service', 'http', '*', '1.0');
-PaymentsServiceFactory.PayPalPlatformDescriptor = new pip_services3_commons_node_1.Descriptor('pip-services-payments', 'platform', 'paypal', '*', '1.0');
-PaymentsServiceFactory.StripePlatformDescriptor = new pip_services3_commons_node_1.Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0');
+PaymentsServiceFactory.PayPalConnectorDescriptor = new pip_services3_commons_node_1.Descriptor('pip-services-payments', 'platform', 'paypal', '*', '1.0');
+PaymentsServiceFactory.StripeConnectorDescriptor = new pip_services3_commons_node_1.Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0');
 //# sourceMappingURL=PaymentsServiceFactory.js.map

@@ -1,1 +1,1 @@
-{"version":3,"file":"IPaymentPlatform.js","sourceRoot":"","sources":["../../../../src/logic/platforms/IPaymentPlatform.ts"],"names":[],"mappings":""}
+{"version":3,"file":"IPaymentsConnector.js","sourceRoot":"","sources":["../../../../src/logic/platforms/IPaymentsConnector.ts"],"names":[],"mappings":""}

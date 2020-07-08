@@ -1,12 +1,13 @@
-import { IPaymentPlatform } from "./IPaymentPlatform";
+import { IPaymentsConnector } from "../IPaymentsConnector";
 import { PaymentV1, OrderV1, PaymentStatusV1 } from "../../data/version1";
 import { CredentialParams, CredentialResolver } from "pip-services3-components-node";
 import { ConfigParams, BadRequestException } from "pip-services3-commons-node";
 
 import Stripe from 'stripe';
 
+import { StripeOptions } from './StripeOptions';
 
-export class StripePlatform implements IPaymentPlatform {
+export class StripeConnector implements IPaymentsConnector {
 
     private _credentialsResolver: CredentialResolver = new CredentialResolver();
 
@@ -140,56 +141,6 @@ export class StripePlatform implements IPaymentPlatform {
         }
         else {
             payment.status = PaymentStatusV1.ErrorConfirm;
-        }
-    }
-}
-
-class StripeOptions implements Stripe.StripeConfig {
-    /// Stripe API version to be used. If not set the account's default version will be used.
-    /// Default: null
-    public apiVersion: Stripe.LatestApiVersion;
-    /// The amount of times a request should be retried.
-    /// Default: 0
-    public maxNetworkRetries: number = 0;
-    /// The amount of times a request should be retried.
-    /// Default: 80000
-    public timeout: number = 80000;
-    /// Host that requests are made to.
-    /// Default: 'api.stripe.com'
-    public host: string = 'api.stripe.com';
-    /// Port that requests are made to.
-    /// Default: 443
-    public port: number = 443;
-    /// 'https' or 'http'. http is never appropriate for sending requests to Stripe servers, and we strongly discourage http, 
-    /// even in local testing scenarios, as this can result in your credentials being transmitted over an insecure channel.
-    /// Default: https
-    public protocol?: 'https' | 'http';
-    /// Allow Stripe to send latency telemetry.
-    /// Default: true
-    public telemetry: boolean = true;
-
-    /// Proxy agent to be used by the library.
-    /// Default: null
-    public httpAgent: any = null;
-
-    constructor(config: ConfigParams) {
-        //this.apiVersion = config.getAsStringWithDefault("options.apiVersion", this.apiVersion);
-        this.maxNetworkRetries = config.getAsIntegerWithDefault("options.maxNetworkRetries", this.maxNetworkRetries);
-        this.timeout = config.getAsIntegerWithDefault("options.timeout", this.timeout);
-        this.host = config.getAsStringWithDefault("options.host", this.host);
-        this.port = config.getAsIntegerWithDefault("options.port", this.port);
-
-        let protocol = config.getAsStringWithDefault("options.protocol", 'https');
-        this.protocol = protocol == 'https' ? 'https' : 'http';
-
-        this.telemetry = config.getAsBooleanWithDefault("options.telemetry", this.telemetry);
-
-        let httpAgent = config.getAsStringWithDefault("options.httpAgent", null);
-        if (httpAgent != null) {
-            {
-                const ProxyAgent = require('https-proxy-agent');
-                this.httpAgent = new ProxyAgent(this.httpAgent)
-            }
         }
     }
 }

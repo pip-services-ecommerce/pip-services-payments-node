@@ -1,5 +1,4 @@
-export class PlatformDataV1
-{
+export class PlatformDataV1 {
     public platform_id: string;
 
     public order_id: string;
@@ -8,9 +7,4 @@ export class PlatformDataV1
 
     public confirm_data: string;
     public capture_id: string;
-
-    constructor(platform_id: string)
-    {
-        this.platform_id = platform_id;
-    }
 }

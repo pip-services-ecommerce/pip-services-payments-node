@@ -13,7 +13,7 @@ import { PaymentsMemoryPersistence } from '../../../src/persistence';
 import { PaymentsController } from '../../../src/logic/PaymentsController';
 import { PaymentsHttpServiceV1 } from '../../../src/services/version1/PaymentsHttpServiceV1';
 import { TestModel } from '../../data/TestModel';
-import { StripePlatform } from '../../../src/logic/platforms';
+import { StripeConnector } from '../../../src/logic/platforms';
 
 var now = new Date();
 
@@ -49,7 +49,7 @@ suite('PaymentsHttpServiceV1', () => {
         controller = new PaymentsController();
         controller.configure(new ConfigParams());
 
-        let stripePlatform = new StripePlatform();
+        let stripePlatform = new StripeConnector();
         stripePlatform.configure(ConfigParams.fromTuples(
             'options.auto_confirm', false,
             'credential.access_key', STRIPE_ACCESS_KEY

@@ -1,13 +1,14 @@
 let _ = require('lodash');
 let async = require('async');
 
-import { CredentialParams, CredentialResolver } from 'pip-services3-components-node';
-import { IPaymentPlatform } from './IPaymentPlatform';
+import { CredentialParams } from 'pip-services3-components-node';
+import { CredentialResolver } from 'pip-services3-components-node';
+import { IPaymentsConnector } from '../IPaymentsConnector';
 import { OrderV1, PaymentV1, PaymentStatusV1 } from '../../data/version1';
 import { ConfigParams } from 'pip-services3-commons-node';
-import { PayPalOrder } from '.';
+import { PayPalOrder } from './PayPalOrder';
 
-export class PayPalPlatform implements IPaymentPlatform {
+export class PayPalConnector implements IPaymentsConnector {
 
     private _credentialsResolver: CredentialResolver = new CredentialResolver();
 
@@ -16,8 +17,7 @@ export class PayPalPlatform implements IPaymentPlatform {
     private _client: any = null;
     private _checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
 
-    constructor() {
-    }
+    constructor() {}
 
     configure(config: ConfigParams): void {
         this._credentialsResolver.configure(config);

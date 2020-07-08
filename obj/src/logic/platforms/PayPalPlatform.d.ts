@@ -1,7 +1,7 @@
-import { IPaymentPlatform } from './IPaymentPlatform';
+import { IPaymentsConnector } from './IPaymentsConnector';
 import { OrderV1, PaymentV1 } from '../../data/version1';
 import { ConfigParams } from 'pip-services3-commons-node';
-export declare class PayPalPlatform implements IPaymentPlatform {
+export declare class PayPalConnector implements IPaymentsConnector {
     private _credentialsResolver;
     private _sandbox;
     private _credentials;

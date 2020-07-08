@@ -13,7 +13,7 @@ let _ = require('lodash');
 let async = require('async');
 const pip_services3_components_node_1 = require("pip-services3-components-node");
 const version1_1 = require("../../data/version1");
-class PayPalPlatform {
+class PayPalConnector {
     constructor() {
         this._credentialsResolver = new pip_services3_components_node_1.CredentialResolver();
         this._sandbox = false;
@@ -192,5 +192,5 @@ class PayPalPlatform {
         return result;
     }
 }
-exports.PayPalPlatform = PayPalPlatform;
-//# sourceMappingURL=PayPalPlatform.js.map
+exports.PayPalConnector = PayPalConnector;
+//# sourceMappingURL=PayPalConnector.js.map

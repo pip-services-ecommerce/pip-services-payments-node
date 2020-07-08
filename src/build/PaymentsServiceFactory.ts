@@ -5,7 +5,7 @@ import { PaymentsMemoryPersistence } from '../persistence/PaymentsMemoryPersiste
 import { PaymentsMongoDbPersistence } from '../persistence/PaymentsMongoDbPersistence';
 import { PaymentsController } from '../logic/PaymentsController';
 import { PaymentsHttpServiceV1 } from '../services/version1/PaymentsHttpServiceV1';
-import { PayPalPlatform, StripePlatform } from '../logic/platforms';
+import { PayPalConnector, StripeConnector } from '../logic/platforms';
 
 export class PaymentsServiceFactory extends Factory {
     public static PaymentsMemoryPersistenceDescriptor = new Descriptor('pip-services-payments', 'persistence', 'memory', '*', '1.0');
@@ -13,8 +13,8 @@ export class PaymentsServiceFactory extends Factory {
     public static ControllerDescriptor = new Descriptor('pip-services-payments', 'controller', 'default', '*', '1.0');
     public static HttpServiceV1Descriptor = new Descriptor('pip-services-payments', 'service', 'http', '*', '1.0');
 
-    public static PayPalPlatformDescriptor = new Descriptor('pip-services-payments', 'platform', 'paypal', '*', '1.0');
-    public static StripePlatformDescriptor = new Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0');
+    public static PayPalConnectorDescriptor = new Descriptor('pip-services-payments', 'platform', 'paypal', '*', '1.0');
+    public static StripeConnectorDescriptor = new Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0');
 
     constructor() {
         super();
@@ -24,7 +24,7 @@ export class PaymentsServiceFactory extends Factory {
         this.registerAsType(PaymentsServiceFactory.ControllerDescriptor, PaymentsController);
         this.registerAsType(PaymentsServiceFactory.HttpServiceV1Descriptor, PaymentsHttpServiceV1);
 
-        this.registerAsType(PaymentsServiceFactory.PayPalPlatformDescriptor, PayPalPlatform);
-        this.registerAsType(PaymentsServiceFactory.StripePlatformDescriptor, StripePlatform);
+        this.registerAsType(PaymentsServiceFactory.PayPalConnectorDescriptor, PayPalConnector);
+        this.registerAsType(PaymentsServiceFactory.StripeConnectorDescriptor, StripeConnector);
     }
 }

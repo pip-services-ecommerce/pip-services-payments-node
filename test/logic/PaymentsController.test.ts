@@ -10,7 +10,7 @@ import { PaymentsController } from '../../src/logic/PaymentsController';
 import { PaymentsMemoryPersistence } from '../../src/persistence';
 
 import { TestModel } from '../data/TestModel';
-import { PayPalPlatform, StripePlatform } from '../../src/logic/platforms';
+import { PayPalConnector, StripeConnector } from '../../src/logic/platforms';
 
 var now = new Date();
 
@@ -35,7 +35,7 @@ suite('PaymentsController', () => {
         controller = new PaymentsController();
         controller.configure(new ConfigParams());
 
-        let stripePlatform = new StripePlatform();
+        let stripePlatform = new StripeConnector();
         stripePlatform.configure(ConfigParams.fromTuples(
             'options.auto_confirm', false,
             'credential.access_key', STRIPE_ACCESS_KEY

@@ -1,6 +1,8 @@
 let async = require('async');
 
-import { ConfigParams, IdGenerator, IOpenable, DependencyResolver } from 'pip-services3-commons-node';
+import { ConfigParams } from 'pip-services3-commons-node';
+import { IdGenerator } from 'pip-services3-commons-node';
+import { IOpenable } from 'pip-services3-commons-node';
 import { IConfigurable } from 'pip-services3-commons-node';
 import { Descriptor } from 'pip-services3-commons-node';
 import { IReferences } from 'pip-services3-commons-node';
@@ -13,7 +15,7 @@ import { IPaymentsPersistence } from '../persistence';
 import { IPaymentsController } from './IPaymentsController';
 import { PaymentsCommandSet } from './PaymentsCommandSet';
 import { CompositeLogger } from 'pip-services3-components-node';
-import { IPaymentPlatform } from './platforms';
+import { IPaymentsConnector } from './platforms';
 import { PlatformDataV1 } from '../data/version1/PlatformDataV1';
 
 export class PaymentsController implements IPaymentsController, IConfigurable, IOpenable, IReferenceable, ICommandable {
@@ -22,8 +24,8 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
     private _commandSet: PaymentsCommandSet;
     private _logger: CompositeLogger = new CompositeLogger();
 
-    private _paypalPlatform: IPaymentPlatform;
-    private _stripePlatform: IPaymentPlatform;
+    private _paypalPlatform: IPaymentsConnector;
+    private _stripePlatform: IPaymentsConnector;
 
     public constructor() {
     }
@@ -38,11 +40,11 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
             new Descriptor('pip-services-payments', 'persistence', '*', '*', '1.0')
         );
 
-        this._paypalPlatform = references.getOneOptional<IPaymentPlatform>(
+        this._paypalPlatform = references.getOneOptional<IPaymentsConnector>(
             new Descriptor('pip-services-payments', 'platform', 'paypal', '*', '1.0')
         );
 
-        this._stripePlatform = references.getOneOptional<IPaymentPlatform>(
+        this._stripePlatform = references.getOneOptional<IPaymentsConnector>(
             new Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0')
         );
     }
@@ -157,7 +159,7 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
         return payment;
     }
 
-    private getPaymentPlatformById(platformId: string): IPaymentPlatform {
+    private getPaymentPlatformById(platformId: string): IPaymentsConnector {
         switch (platformId) {
             case 'paypal': return this._paypalPlatform;
             case 'stripe': return this._stripePlatform;

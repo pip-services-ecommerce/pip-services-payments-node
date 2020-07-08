@@ -1,14 +1,10 @@
-export class OrderItemV1
-{
-    public name: string;
+export class OrderItemV1 {
+    public product_id: string;
+    public product_name: string;
     public description?: string;
-    
-    public amount: number;
-    public amount_currency: string;
-
-    public tax?: number;
-    public tax_currency?: string;
-
     public quantity: number;
-    public category?: string;
+    public price: number;
+    public discount?: number;
+    public discount_price?: number;
+    public total: number;
 }
