@@ -5,8 +5,14 @@ import { CredentialParams } from 'pip-services3-components-node';
 import { CredentialResolver } from 'pip-services3-components-node';
 import { IPaymentsConnector } from '../IPaymentsConnector';
 import { OrderV1, PaymentV1, PaymentStatusV1 } from '../../data/version1';
-import { ConfigParams } from 'pip-services3-commons-node';
+import { ConfigParams, IdGenerator, BadRequestException } from 'pip-services3-commons-node';
 import { PayPalOrder } from './PayPalOrder';
+import { PaymentSystemAccountV1 } from '../../data/version1/PaymentSystemAccountV1';
+import { BuyerV1 } from '../../data/version1/BuyerV1';
+import { PaymentMethodV1 } from '../../data/version1/PaymentMethodV1';
+import { PaymentSystemV1 } from '../../data/version1/PaymentSystemV1';
+import { SellerV1 } from '../../data/version1/SellerV1';
+import { PayoutV1 } from '../../data/version1/PayoutV1';
 
 export class PayPalConnector implements IPaymentsConnector {
 
@@ -14,10 +20,9 @@ export class PayPalConnector implements IPaymentsConnector {
 
     private _sandbox: boolean = false;
     private _credentials: CredentialParams;
-    private _client: any = null;
-    private _checkoutNodeJssdk = require('@paypal/checkout-server-sdk');
+    private _sdk = require('@paypal/checkout-server-sdk');
 
-    constructor() {}
+    constructor() { }
 
     configure(config: ConfigParams): void {
         this._credentialsResolver.configure(config);
@@ -27,7 +32,7 @@ export class PayPalConnector implements IPaymentsConnector {
     }
 
     public isOpen(): boolean {
-        return this._client != null;
+        return true;
     }
 
     public open(correlationId: string, callback: (err: any) => void): void {
@@ -42,135 +47,201 @@ export class PayPalConnector implements IPaymentsConnector {
             this._credentials = result;
         });
 
-        if (error != null) {
-            if (callback) callback(error);
-            return;
-        }
-
-        let clientId = this._credentials.getAccessId();
-        let clientSecret = this._credentials.getAccessKey();
-
-        let environment = this._sandbox
-            ? new this._checkoutNodeJssdk.core.SandboxEnvironment(clientId, clientSecret)
-            : new this._checkoutNodeJssdk.core.LiveEnvironment(clientId, clientSecret);
-
-        this._client = new this._checkoutNodeJssdk.core.PayPalHttpClient(environment);
-
-        if (callback) callback(null);
+        if (callback) callback(error);
     }
 
     public close(correlationId: string, callback: (err: any) => void): void {
-        this._client = null;
+        this._credentials = null;
         if (callback) callback(null);
     }
 
-    public makeCreditPayment(payment: PaymentV1, order: OrderV1,
-        callback: (err: any) => void): void {
+    async makePaymentAsync(correlationId: string, account: PaymentSystemAccountV1,
+        buyer: BuyerV1, order: OrderV1, paymentMethod: PaymentMethodV1,
+        amount: number, currencyCode: string) {
 
-        this.createOrderAsync(payment, order)
-            .then(() => callback(null),
-                (err) => {
-                    payment.status = PaymentStatusV1.ErrorCreateOrder;
-                    callback(err)
-                }
-            )
-            .catch((err) => {
-                payment.status = PaymentStatusV1.ErrorCreateOrder;
-                callback(err)
-            });
+        let client = this.createPaymentSystemClient(correlationId, account);
+
+        order = order ?? { total: amount, currency_code: currencyCode, id: IdGenerator.nextLong() };
+
+        let payOrder = this.createPayPalOrder(order);
+
+        const request = new this._sdk.orders.OrdersCreateRequest();
+        request.headers["prefer"] = "return=representation";
+        request.requestBody(payOrder);
+
+        const response = await client.execute(request);
+
+        if (response.statusCode === 201) {
+            let payment: PaymentV1 = new PaymentV1();
+            payment.id = IdGenerator.nextLong();
+            payment.system = PaymentSystemV1.PayPal;
+            payment.status = PaymentStatusV1.Unconfirmed;
+
+            payment.order_id = response.result.id;
+            payment.order_amount = order.total;
+            payment.order_currency = order.currency_code;
+            payment.confirm_data = response.result.links.filter((item: { rel: string; }) => item.rel === "approve")[0].href;
+        }
+
+        return null;
     }
 
-    public confirmCreditPayment(payment: PaymentV1, callback: (err: any, result: any) => void): void {
-        this.authorizeOrderAsync(payment).then(authorizationId => {
-            this.captureOrderAsync(payment, authorizationId).catch(error => {
-                payment.status = PaymentStatusV1.ErrorConfirm;
-                callback(error, null);
-            });
-        }).catch(error => {
-            payment.status = PaymentStatusV1.ErrorAuthorize;
-            callback(error, null);
-        });
+    async submitPaymentAsync(correlationId: string, account: PaymentSystemAccountV1, buyer: BuyerV1, order: OrderV1, paymentMethod: PaymentMethodV1,
+        amount: number, currencyCode: string) {
+        let client = this.createPaymentSystemClient(correlationId, account);
+
+        order = order ?? { total: amount, currency_code: currencyCode, id: IdGenerator.nextLong() };
+
+        let payOrder = this.createPayPalOrder(order);
+
+        const request = new this._sdk.orders.OrdersCreateRequest();
+        request.headers["prefer"] = "return=representation";
+        request.requestBody(payOrder);
+
+        const response = await client.execute(request);
+
+        if (response.statusCode === 201) {
+            let payment: PaymentV1 = new PaymentV1();
+            payment.id = IdGenerator.nextLong();
+            payment.system = PaymentSystemV1.PayPal;
+            payment.status = PaymentStatusV1.Unconfirmed;
+
+            payment.order_id = response.result.id;
+            payment.order_amount = order.total;
+            payment.order_currency = order.currency_code;
+            payment.confirm_data = response.result.links.filter((item: { rel: string; }) => item.rel === "approve")[0].href;
+        }
+
+        return null;
     }
 
-    public cancelCreditPayment(payment: PaymentV1, callback: (err: any) => void): void {
-        this.captureRefundAsync(payment)
-            .then(() => callback(null))
-            .catch(error => callback(error));
+    async authorizePaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1) {
+        let client = this.createPaymentSystemClient(correlationId, account);
+
+        let authorizationId = await this.authorizeAsync(client, payment);
+
+        await this.captureAsync(client, payment, authorizationId);
+
+        return payment;
     }
 
-    private async createOrderAsync(payment: PaymentV1, order: OrderV1): Promise<void> {
-        try {
-            let payOrder = this.createPayPalOrder(order);
+    async checkPaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1): Promise<PaymentV1> {
+        let client = this.createPaymentSystemClient(correlationId, account);
 
-            const request = new this._checkoutNodeJssdk.orders.OrdersCreateRequest();
-            request.headers["prefer"] = "return=representation";
-            request.requestBody(payOrder);
+        if (payment.order_id) {
+            const request = new this._sdk.orders.OrdersGetRequest(payment.order_id);
+            const response = await client.execute(request);
 
-            const response = await this._client.execute(request);
+            if (response.statusCode === 200) {
+                let status = response.result.status;
 
-            if (response.statusCode === 201) {
-                payment.platform_data.order_id = response.result.id;
-                payment.platform_data.order_amount = order.total;
-                payment.platform_data.order_currency = order.currency_code;    
-                payment.platform_data.confirm_data = response.result.links.filter((item: { rel: string; }) => item.rel === "approve")[0].href;
-                payment.status = PaymentStatusV1.Unconfirmed;
-
-                console.log("Created Successfully\n");
+                payment.status = this.toPublicStatus(status);
+                payment.status_details = status;
+                payment.order_amount = response.result.purchase_units.amount.value;
+                payment.order_currency = response.result.purchase_units.amount.currency_code;;
+                payment.confirm_data = response.result.links.filter((item: { rel: string; }) => item.rel === "approve")[0].href;
             }
         }
-        catch (ex) {
-            console.error(ex);
+
+        return payment;
+    }
+
+    makePayoutAsync(correlationId: string, account: PaymentSystemAccountV1, 
+        seller: SellerV1, description: string, amount: number, currencyCode: string): Promise<PayoutV1> {
+        throw new Error("Method not implemented.");
+    }
+
+    checkPayoutAsync(correlationId: string, account: PaymentSystemAccountV1, 
+        payout: PayoutV1): Promise<PayoutV1> {
+        throw new Error("Method not implemented.");
+    }
+
+    cancelPayoutAsync(correlationId: string, account: PaymentSystemAccountV1, 
+        payout: PayoutV1): Promise<PayoutV1> {
+        throw new Error("Method not implemented.");
+    }
+ 
+    private toPublicStatus(status: string): string {
+        switch (status) {
+            case 'CREATED': return PaymentStatusV1.Created;
+            case 'SAVED': return PaymentStatusV1.Unconfirmed;
+            case 'APPROVED': return PaymentStatusV1.Authorized;
+            case 'VOIDED': return PaymentStatusV1.Canceled;
+            case 'COMPLETED': return PaymentStatusV1.Confirmed;
         }
     }
 
-    private async captureRefundAsync(payment: PaymentV1): Promise<void> {
-        const request = new this._checkoutNodeJssdk.payments.CapturesRefundRequest(payment.platform_data.capture_id);
+    async refundPaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1) {
+        let client = this.createPaymentSystemClient(correlationId, account);
+
+        const request = new this._sdk.payments.CapturesRefundRequest(payment.capture_id);
         request.requestBody({
             "amount": {
-                "value": payment.platform_data.order_amount,
-                "currency_code": payment.platform_data.order_currency
+                "value": payment.order_amount,
+                "currency_code": payment.order_currency
             }
         });
 
-        const response = await this._client.execute(request);
+        const response = await client.execute(request);
+
         if (response.statusCode === 201) {
             payment.status = PaymentStatusV1.Canceled;
-            return;
         }
 
-        payment.status = PaymentStatusV1.ErrorCancel;
+        return payment;
     }
 
-    private async authorizeOrderAsync(payment: PaymentV1): Promise<string> {
-        const request = new this._checkoutNodeJssdk.orders.OrdersAuthorizeRequest(payment.platform_data.order_id);
+    private createPaymentSystemClient(correlationId: string, account: PaymentSystemAccountV1) {
+        let clientId: string;
+        let clientSecret: string;
+
+        if (account) {
+            clientId = account.access_id;
+            clientSecret = account.access_key;
+        }
+        else if (this._credentials) {
+            clientId = this._credentials.getAccessId();
+            clientSecret = this._credentials.getAccessKey();
+        }
+        else
+            throw new BadRequestException(correlationId, 'ERR_CREDENTIALS', 'Credentials to connect to the payment system is not specified')
+
+        let environment = this._sandbox
+            ? new this._sdk.core.SandboxEnvironment(clientId, clientSecret)
+            : new this._sdk.core.LiveEnvironment(clientId, clientSecret);
+
+        let client = new this._sdk.core.PayPalHttpClient(environment);
+
+        return client;
+    }
+
+    private async authorizeAsync(client: any, payment: PaymentV1): Promise<string> {
+        const request = new this._sdk.orders.OrdersAuthorizeRequest(payment.order_id);
         request.requestBody({});
-        const response = await this._client.execute(request);
+        const response = await client.execute(request);
 
         let authorizationId = "";
         if (response.statusCode === 201) {
             authorizationId = response.result.purchase_units[0].payments.authorizations[0].id;
             payment.status = PaymentStatusV1.Authorized;
-
-            console.log("Authorization ID: " + authorizationId);
-            console.log("Authorized Successfully\n");
         }
 
         return authorizationId;
     }
 
-    private async captureOrderAsync(payment: PaymentV1, authId: string): Promise<void> {
-        const request = new this._checkoutNodeJssdk.payments.AuthorizationsCaptureRequest(authId);
+    private async captureAsync(client: any, payment: PaymentV1, authId: string): Promise<void> {
+        const request = new this._sdk.payments.AuthorizationsCaptureRequest(authId);
         request.requestBody({});
-        const response = await this._client.execute(request);
-        if (response.statusCode === 201) {
-            payment.platform_data.capture_id = response.result.id;
-            payment.status = PaymentStatusV1.Confirmed;
 
-            console.log("Captured Successfully\n");
+        const response = await client.execute(request);
+        if (response.statusCode === 201) {
+            payment.capture_id = response.result.id;
+            payment.status = PaymentStatusV1.Confirmed;
         }
     }
 
     private createPayPalOrder(order: OrderV1): PayPalOrder {
+
         let payOrder: PayPalOrder =
         {
             intent: "AUTHORIZE",
@@ -188,18 +259,18 @@ export class PayPalConnector implements IPaymentsConnector {
                     },
                     items: order.items.map((value, index, array) => {
                         return {
-                            name: value.name,
+                            name: value.product_name,
                             description: value.description,
                             unit_amount: {
-                                value: value.amount.toString(),
-                                currency_code: value.amount_currency
+                                value: value.total.toString(),
+                                currency_code: order.currency_code
                             },
-                            tax: value.tax == null ? null : {
-                                value: value.tax.toString(),
-                                currency_code: value.tax_currency
+                            tax: value.discount == null ? null : {
+                                value: value.discount.toString(),
+                                currency_code: order.currency_code
                             },
                             quantity: value.quantity.toString(),
-                            category: value.category
+                            category: null //value.category
                         }
                     })
                 }
@@ -208,15 +279,4 @@ export class PayPalConnector implements IPaymentsConnector {
 
         return payOrder;
     }
-
-    private fromPublic(value: PayPalOrder): any {
-        if (value == null) return null;
-
-        delete value.create_time;
-
-        let result = _.omit(value, 'id', 'state');
-
-        return result;
-    }
-
 }

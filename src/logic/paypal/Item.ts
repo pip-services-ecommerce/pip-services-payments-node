@@ -1,4 +1,6 @@
-class Item {
+import { Money } from "./Money";
+
+export class Item {
     public name: string;
     public description: string;
     public unit_amount: Money;

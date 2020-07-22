@@ -3,8 +3,12 @@ import { IPaymentsController } from './IPaymentsController';
 export declare class PaymentsCommandSet extends CommandSet {
     private _controller;
     constructor(controller: IPaymentsController);
-    private makeMakeCreditPaymentCommand;
-    private makeConfirmCreditPaymentCommand;
-    private makeMakeDebitPaymentCommand;
-    private makeCancelPaymentCommand;
+    private makeMakePaymentCommand;
+    private makeSubmitPaymentCommand;
+    private makeAuthorizePaymentCommand;
+    private makeCheckPaymentCommand;
+    private makeRefundPaymentCommand;
+    private makeMakePayoutCommand;
+    private makeCheckPayoutCommand;
+    private makeCancelPayoutCommand;
 }

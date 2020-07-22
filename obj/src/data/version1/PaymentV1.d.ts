@@ -1,10 +1,13 @@
 import { IStringIdentifiable } from 'pip-services3-commons-node';
-import { PlatformDataV1 } from './PlatformDataV1';
 export declare class PaymentV1 implements IStringIdentifiable {
     id: string;
-    order_id: string;
-    method_id?: string;
-    type: string;
-    platform_data: PlatformDataV1;
+    system: string;
     status: string;
+    status_details?: string;
+    order_id?: string;
+    order_amount?: number;
+    order_currency?: string;
+    authorization_id?: string;
+    confirm_data?: string;
+    capture_id?: string;
 }

@@ -1,6 +1,6 @@
 let async = require('async');
 
-import { ConfigParams } from 'pip-services3-commons-node';
+import { ConfigParams, BadRequestException } from 'pip-services3-commons-node';
 import { IdGenerator } from 'pip-services3-commons-node';
 import { IOpenable } from 'pip-services3-commons-node';
 import { IConfigurable } from 'pip-services3-commons-node';
@@ -10,22 +10,27 @@ import { IReferenceable } from 'pip-services3-commons-node';
 import { CommandSet } from 'pip-services3-commons-node';
 import { ICommandable } from 'pip-services3-commons-node';
 
-import { PaymentV1, OrderV1, PaymentTypesV1, PaymentStatusV1 } from '../data/version1';
-import { IPaymentsPersistence } from '../persistence';
+import { PaymentV1, PaymentSystemV1 } from '../data/version1';
+import { OrderV1 } from '../data/version1';
+import { PaymentStatusV1 } from '../data/version1';
+
 import { IPaymentsController } from './IPaymentsController';
 import { PaymentsCommandSet } from './PaymentsCommandSet';
 import { CompositeLogger } from 'pip-services3-components-node';
-import { IPaymentsConnector } from './platforms';
-import { PlatformDataV1 } from '../data/version1/PlatformDataV1';
+import { IPaymentsConnector } from './IPaymentsConnector';
+import { BuyerV1 } from '../data/version1/BuyerV1';
+import { PaymentMethodV1 } from '../data/version1/PaymentMethodV1';
+import { PaymentSystemAccountV1 } from '../data/version1/PaymentSystemAccountV1';
+import { SellerV1 } from '../data/version1/SellerV1';
+import { PayoutV1 } from '../data/version1/PayoutV1';
 
 export class PaymentsController implements IPaymentsController, IConfigurable, IOpenable, IReferenceable, ICommandable {
 
-    private _persistence: IPaymentsPersistence;
     private _commandSet: PaymentsCommandSet;
     private _logger: CompositeLogger = new CompositeLogger();
 
-    private _paypalPlatform: IPaymentsConnector;
-    private _stripePlatform: IPaymentsConnector;
+    private _paypalConnector: IPaymentsConnector;
+    private _stripeConnector: IPaymentsConnector;
 
     public constructor() {
     }
@@ -36,16 +41,12 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
 
     public setReferences(references: IReferences): void {
 
-        this._persistence = references.getOneRequired<IPaymentsPersistence>(
-            new Descriptor('pip-services-payments', 'persistence', '*', '*', '1.0')
+        this._paypalConnector = references.getOneOptional<IPaymentsConnector>(
+            new Descriptor('pip-services-payments', 'connector', 'paypal', '*', '1.0')
         );
 
-        this._paypalPlatform = references.getOneOptional<IPaymentsConnector>(
-            new Descriptor('pip-services-payments', 'platform', 'paypal', '*', '1.0')
-        );
-
-        this._stripePlatform = references.getOneOptional<IPaymentsConnector>(
-            new Descriptor('pip-services-payments', 'platform', 'stripe', '*', '1.0')
+        this._stripeConnector = references.getOneOptional<IPaymentsConnector>(
+            new Descriptor('pip-services-payments', 'connector', 'stripe', '*', '1.0')
         );
     }
 
@@ -58,7 +59,7 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
     }
 
     public isOpen(): boolean {
-        return this._paypalPlatform != null || this._stripePlatform != null;
+        return this._paypalConnector != null || this._stripeConnector != null;
     }
 
     public open(correlationId: string, callback: (err: any) => void): void {
@@ -66,137 +67,152 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
     }
 
     public close(correlationId: string, callback: (err: any) => void): void {
-        if (this._paypalPlatform.isOpen) {
-            this._paypalPlatform.close(correlationId, (err) => {
+        if (this._paypalConnector.isOpen) {
+            this._paypalConnector.close(correlationId, (err) => {
                 if (err != null) {
                     if (callback) callback(err);
                     return;
                 }
 
-                this._paypalPlatform = null;
+                this._paypalConnector = null;
             });
         }
 
-        if (this._stripePlatform.isOpen) {
-            this._stripePlatform.close(correlationId, (err) => {
+        if (this._stripeConnector.isOpen) {
+            this._stripeConnector.close(correlationId, (err) => {
                 if (err != null) {
                     if (callback) callback(err);
                     return;
                 }
 
-                this._stripePlatform = null;
+                this._stripeConnector = null;
             });
         }
     }
 
-    public makeCreditPayment(correlationId: string, platformId: string, methodId: string, order: OrderV1,
+    public makePayment(correlationId: string, system: string, account: PaymentSystemAccountV1,
+        buyer: BuyerV1, order: OrderV1, paymentMethod: PaymentMethodV1,
+        amount: number, currencyCode: string,
         callback: (err: any, payment: PaymentV1) => void): void {
 
-        let payment: PaymentV1 = new PaymentV1();
-        payment.id = IdGenerator.nextLong();
-        payment.order_id = order.id;
-        payment.method_id = methodId;
-        payment.platform_data = new PlatformDataV1(platformId);
-        payment.type = PaymentTypesV1.Credit;
-        payment.status = PaymentStatusV1.Created;
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
 
-        this._persistence.create(correlationId, payment, (err, res) => {
-            if (err != null) {
-                callback(err, null);
-                return;
-            }
-
-            payment = res;
-        });
-
-        var platform = this.getPaymentPlatformById(platformId);
-        if (platform != null) {
-            platform.makeCreditPayment(payment, order, (err) => {
-                if (err != null && callback) {
-                    callback(err, null);
-                    return;
-                }
-
-                this._persistence.update(correlationId, payment, callback);       
-            });
-        }
-        else {
+        connector.makePaymentAsync(correlationId, account, buyer, order, paymentMethod, amount, currencyCode).then(payment => {
             if (callback) callback(null, payment);
-        }
-    }
-
-    public confirmCreditPayment(correlationId: string, paymentId: string,
-        callback: (err: any, payment: PaymentV1) => void): void {
-
-        let payment: PaymentV1 = this.getPaymentById(correlationId, paymentId, callback);
-
-        if (payment != null) {
-            var platform = this.getPaymentPlatformById(payment.platform_data.platform_id);
-
-            if (platform != null) {
-                platform.confirmCreditPayment(payment, (err) => {
-                    if (err != null) {
-                        callback(err, null);
-                        return;
-                    }
-                });
-            }
-        }
-
-        this._persistence.update(correlationId, payment, callback);
-    }
-
-    private getPaymentById(correlationId: string, paymentId: string, callback: (err: any, payment: PaymentV1) => void) {
-        let payment: PaymentV1;
-
-        this._persistence.getOneById(correlationId, paymentId, (err: any, item: PaymentV1) => {
-            if (err != null)
-                callback(err, null);
-            else
-                payment = item;
+        }).catch(err => {
+            if (callback) callback(err, null);
         });
-
-        return payment;
     }
 
-    private getPaymentPlatformById(platformId: string): IPaymentsConnector {
-        switch (platformId) {
-            case 'paypal': return this._paypalPlatform;
-            case 'stripe': return this._stripePlatform;
-            default: return null;
-        }
-    }
-
-    public makeDebitPayment(correlationId: string, platformId: string, transactionId: string, destinationAccount: string,
+    public submitPayment(correlationId: string, system: string, account: PaymentSystemAccountV1,
+        buyer: BuyerV1, order: OrderV1, paymentMethod: PaymentMethodV1,
+        amount: number, currencyCode: string,
         callback: (err: any, payment: PaymentV1) => void): void {
 
-        let payment: PaymentV1 = new PaymentV1();
-        payment.id = IdGenerator.nextLong();
-        payment.platform_data = new PlatformDataV1(platformId);
-        payment.type = PaymentTypesV1.Debit;
-        payment.status = PaymentStatusV1.Created;
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
 
-        this._persistence.create(correlationId, payment, callback);
+        connector.submitPaymentAsync(correlationId, account, buyer, order, paymentMethod, amount, currencyCode).then(payment => {
+            if (callback) callback(null, payment);
+        }).catch(err => {
+            if (callback) callback(err, null);
+        });
     }
 
-    public cancelPayment(correlationId: string, paymentId: string,
-        callback: (err: any, res: PaymentV1) => void): void {
-        let payment: PaymentV1 = this.getPaymentById(correlationId, paymentId, callback);
+    public authorizePayment(correlationId: string, system: string, account: PaymentSystemAccountV1,
+        payment: PaymentV1,
+        callback: (err: any, payment: PaymentV1) => void): void {
 
-        if (payment != null && payment.type == PaymentTypesV1.Credit) {
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
 
-            var platform = this.getPaymentPlatformById(payment.platform_data.platform_id);
+        connector.authorizePaymentAsync(correlationId, account, payment).then(payment => {
+            if (callback) callback(null, payment);
+        }).catch(err => {
+            if (callback) callback(err, null);
+        });
+    }
 
-            if (platform != null) {
-                platform.cancelCreditPayment(payment, (err) => {
-                    if (err != null) {
-                        callback(err, null);
-                        return;
-                    }
-                });
-            }
+    public checkPayment(correlationId: string, system: string, account: PaymentSystemAccountV1,
+        payment: PaymentV1,
+        callback: (err: any, payment: PaymentV1) => void): void {
+
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
+
+        connector.checkPaymentAsync(correlationId, account, payment).then(payment => {
+            if (callback) callback(null, payment);
+        }).catch(err => {
+            if (callback) callback(err, null);
+        });
+    }
+
+    public refundPayment(correlationId: string, system: string, account: PaymentSystemAccountV1, payment: PaymentV1,
+        callback: (err: any, payment: PaymentV1) => void): void {
+
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
+
+        connector.refundPaymentAsync(correlationId, account, payment).then(payment => {
+            if (callback) callback(null, payment);
+        }).catch(err => {
+            if (callback) callback(err, null);
+        });
+    }
+
+    public makePayout(correlationId: string, system: string, account: PaymentSystemAccountV1,
+        seller: SellerV1, description: string, amount: number, currencyCode: string,
+        callback: (err: any, payout: PayoutV1) => void): void {
+
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
+
+        connector.makePayoutAsync(correlationId, account, seller, description, amount, currencyCode).then(payout => {
+            if (callback) callback(null, payout);
+        }).catch(err => {
+            if (callback) callback(err, null);
+        });
+    }
+
+    public checkPayout(correlationId: string, system: string, account: PaymentSystemAccountV1,
+        payout: PayoutV1,
+        callback: (err: any, payout: PayoutV1) => void): void {
+
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
+
+        connector.checkPayoutAsync(correlationId, account, payout).then(payout => {
+            if (callback) callback(null, payout);
+        }).catch(err => {
+            if (callback) callback(err, null);
+        });
+    }
+
+    public cancelPayout(correlationId: string, system: string, account: PaymentSystemAccountV1,
+        payout: PayoutV1,
+        callback: (err: any, payout: PayoutV1) => void): void {
+
+        var connector = this.getSystemConnector(correlationId, system, callback);
+        if (!connector) return;
+
+        connector.checkPayoutAsync(correlationId, account, payout).then(payout => {
+            if (callback) callback(null, payout);
+        }).catch(err => {
+            if (callback) callback(err, null);
+        });
+    }
+
+    private getSystemConnector(correlationId: string, system: string, callback: (err: any, payment: PaymentV1) => void): IPaymentsConnector {
+        switch (system) {
+            case PaymentSystemV1.PayPal: return this._paypalConnector;
+            case PaymentSystemV1.Stripe: return this._stripeConnector;
+            default:
         }
 
-        this._persistence.update(correlationId, payment, callback);
+        callback(new BadRequestException(correlationId, 'ERR_PAYMENT_SYSTEM', 'Payment system is not supported')
+            .withDetails('system', system), null);
+        return null;
     }
+
 }

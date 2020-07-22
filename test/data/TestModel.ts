@@ -16,10 +16,10 @@ export class TestModel
         let total = 0;
 
         for (let index = 0; index < itemsCount; index++) {
-            const orderItem = this.createOrderItem(order.currency_code);
+            const orderItem = this.createOrderItem();
 
             order.items.push(orderItem);
-            total += orderItem.amount;
+            total += orderItem.total;
         }
 
         order.total = total;
@@ -27,16 +27,20 @@ export class TestModel
         return order;
     }
 
-    static createOrderItem(currency: string) : OrderItemV1
+    static createOrderItem() : OrderItemV1
     {
+        let quantity = RandomInteger.nextInteger(1, 5);
+        let price = Math.round(RandomDouble.nextDouble(5, 30) * 100) / 100;
+        let total = quantity * price;
+
         let orderItem : OrderItemV1 = 
         {
-            name: RandomText.word(),
+            product_id: IdGenerator.nextLong(),
+            product_name: RandomText.word(),
             description: RandomText.phrase(10, 50),
-            amount: Math.trunc(RandomDouble.nextDouble(10, 1000) * 100) / 100,
-            amount_currency: currency,
-            category: RandomText.word(),
-            quantity: RandomInteger.nextInteger(1, 10),
+            quantity: quantity,
+            price: price,
+            total: total
         }
 
         return orderItem;

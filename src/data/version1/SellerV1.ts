@@ -9,4 +9,8 @@ export class SellerV1 implements IStringIdentifiable {
     public email?: string;
     public phone?: string;
     public address?: AddressV1;
+
+    public birth_date?: Date;
+    public ssn_last4?: string;
+    public ip_address?: string;
 }

@@ -4,6 +4,10 @@ export class PayoutV1 implements IStringIdentifiable {
     public id: string;
     public system: string;
     public status: string;
+    
+    public status_details?: string;
 
-    // Todo: Add platform specific data here that allows to perform other operations
+    public transfer_id?: string;
+    public account_id?: string;
+    public reversal_id?: string;
 }

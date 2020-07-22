@@ -1,4 +1,6 @@
-class AmountBreakdown {
+import { Money } from "./Money";
+
+export class AmountBreakdown {
     public item_total?: Money;
     public shipping?: Money;
     public handling?: Money;

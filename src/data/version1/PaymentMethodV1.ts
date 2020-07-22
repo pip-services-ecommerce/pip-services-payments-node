@@ -1,6 +1,5 @@
 import { IStringIdentifiable } from 'pip-services3-commons-node';
 
-import { PaymentMethodTypeV1 } from './PaymentMethodTypeV1';
 import { CreditCardV1 } from './CreditCardV1';
 import { BankAccountV1 } from './BankAccountV1';
 import { AddressV1 } from './AddressV1';

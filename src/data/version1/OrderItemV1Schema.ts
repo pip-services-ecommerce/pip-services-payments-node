@@ -5,14 +5,14 @@ export class OrderItemV1Schema extends ObjectSchema {
 
     public constructor() {
         super();
-    
-        this.withRequiredProperty('name', TypeCode.String);
+  
+        this.withRequiredProperty('product_id', TypeCode.String);
+        this.withRequiredProperty('product_name', TypeCode.String);
         this.withOptionalProperty('description', TypeCode.String);
-        this.withRequiredProperty('amount', TypeCode.Float);
-        this.withRequiredProperty('amount_currency', TypeCode.String);
-        this.withOptionalProperty('tax', TypeCode.Float);
-        this.withOptionalProperty('tax_currency', TypeCode.String);
-        this.withRequiredProperty('quantity', TypeCode.Float);
-        this.withOptionalProperty('category', TypeCode.String);
+        this.withRequiredProperty('quantity', TypeCode.Integer);
+        this.withRequiredProperty('price', TypeCode.Float);
+        this.withOptionalProperty('discount', TypeCode.Float);
+        this.withOptionalProperty('discount_price', TypeCode.Float);
+        this.withRequiredProperty('total', TypeCode.Float);
     }
 }

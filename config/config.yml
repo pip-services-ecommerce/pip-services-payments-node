@@ -11,40 +11,19 @@
 # Perfomance counter that post values to log
 - descriptor: "pip-services:counters:log:default:1.0"
 
-{{#if MEMORY_ENABLED}}
-# In-memory persistence. Use only for testing!
-- descriptor: "pip-services-payments:persistence:memory:default:1.0"
-{{/if}}
-
-{{#if MONGO_ENABLED}}
-# Practice Content MongoDb persistence
-- descriptor: "pip-services-payments:persistence:mongodb:default:1.0"
-  collection: {{MONGO_COLLECTION_PAYMENTS}}{{^MONGO_COLLECTION_PAYMENTS}}payments{{/MONGO_COLLECTION_PAYMENTS}}
-  connection:
-    uri: {{MONGO_SERVICE_URI}}
-    host: {{MONGO_SERVICE_HOST}}{{#unless MONGO_SERVICE_HOST}}"localhost"{{/unless}}
-    port: {{MONGO_SERVICE_PORT}}{{#unless MONGO_SERVICE_PORT}}27017{{/unless}}
-    database: {{MONGO_DB}}{{#unless MONGO_DB}}"test"{{/unless}}
-{{/if}}
-
-{{#unless MEMORY_ENABLED}}{{#unless MONGO_ENABLED}}
-# Default to in-memory persistence, if nothing is set
-- descriptor: "pip-services-payments:persistence:memory:default:1.0"
-{{/unless}}{{/unless}}
-
 # Controller
 - descriptor: "pip-services-payments:controller:default:default:1.0"
 
-# PayPal platform
-- descriptor: "pip-services-payments:platform:paypal:default:1.0"
+# PayPal payment system
+- descriptor: "pip-services-payments:connector:paypal:default:1.0"
   options:
     sandbox: true
   credential:
     access_id: "{{PAYPAL_ACCESS_ID}}"
     access_key: "{{PAYPAL_ACCESS_KEY}}"
 
-# Stripe platform
-- descriptor: "pip-services-payments:platform:stripe:default:1.0"
+# Stripe payment system
+- descriptor: "pip-services-payments:connector:stripe:default:1.0"
   options:
     timeout: 80000
   credential:

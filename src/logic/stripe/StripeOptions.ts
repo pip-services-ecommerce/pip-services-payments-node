@@ -2,7 +2,7 @@ import { ConfigParams } from "pip-services3-commons-node";
 
 import Stripe from 'stripe';
 
-class StripeOptions implements Stripe.StripeConfig {
+export class StripeOptions implements Stripe.StripeConfig {
     /// Stripe API version to be used. If not set the account's default version will be used.
     /// Default: null
     public apiVersion: Stripe.LatestApiVersion;

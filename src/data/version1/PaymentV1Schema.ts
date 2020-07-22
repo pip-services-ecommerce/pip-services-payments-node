@@ -1,17 +1,24 @@
 import { ObjectSchema, ArraySchema } from 'pip-services3-commons-node';
 import { TypeCode } from 'pip-services3-commons-node';
-import { PlatformDataV1Schema } from './PlatformDataV1Schema';
 
 export class PaymentV1Schema extends ObjectSchema {
 
     public constructor() {
         super();
 
-        this.withOptionalProperty('id', TypeCode.String);
+        this.withRequiredProperty('id', TypeCode.String);
+        this.withRequiredProperty('system', TypeCode.String);
+        this.withRequiredProperty('status', TypeCode.String);
+
+        this.withOptionalProperty('status_details', TypeCode.String);
+
         this.withOptionalProperty('order_id', TypeCode.String);
-        this.withOptionalProperty('method_id', TypeCode.String);
-        this.withOptionalProperty('type', TypeCode.String);
-        this.withOptionalProperty('platform_data', new PlatformDataV1Schema());
-        this.withOptionalProperty('status', TypeCode.String);
+        this.withOptionalProperty('order_amount', TypeCode.Float);
+        this.withOptionalProperty('order_currency', TypeCode.String);
+
+        this.withOptionalProperty('authorization_id', TypeCode.String);
+        
+        this.withOptionalProperty('confirm_data', TypeCode.String);
+        this.withOptionalProperty('capture_id', TypeCode.String);
     }
 }

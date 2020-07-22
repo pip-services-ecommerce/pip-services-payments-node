@@ -1,3 +1,3 @@
-# guru-services-payments-node
+# pip-services-payments-node 
 
 This is payments microservice from Pip.Services library. 
