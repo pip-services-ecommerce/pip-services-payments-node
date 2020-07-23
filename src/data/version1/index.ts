@@ -31,6 +31,12 @@ export { PaymentSystemV1 } from './PaymentSystemV1';
 export { PaymentV1 } from './PaymentV1';
 export { PaymentV1Schema } from './PaymentV1Schema';
 
+export { PayoutMethodTypeV1 } from './PayoutMethodTypeV1';
+
+export { PayoutMethodV1 } from './PayoutMethodV1';
+export { PayoutMethodV1Schema } from './PayoutMethodV1Schema';
+
+export { PayoutStatusV1 } from './PayoutStatusV1';
 export { PayoutV1 } from './PayoutV1';
 export { PayoutV1Schema } from './PayoutV1Schema';
 

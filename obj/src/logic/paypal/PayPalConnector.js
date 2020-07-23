@@ -12,9 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 let _ = require('lodash');
 let async = require('async');
 const pip_services3_components_node_1 = require("pip-services3-components-node");
-const version1_1 = require("../../data/version1");
 const pip_services3_commons_node_1 = require("pip-services3-commons-node");
-const PaymentSystemV1_1 = require("../../data/version1/PaymentSystemV1");
+const version1_1 = require("../../data/version1");
+const version1_2 = require("../../data/version1");
+const version1_3 = require("../../data/version1");
 class PayPalConnector {
     constructor() {
         this._credentialsResolver = new pip_services3_components_node_1.CredentialResolver();
@@ -58,8 +59,8 @@ class PayPalConnector {
             if (response.statusCode === 201) {
                 let payment = new version1_1.PaymentV1();
                 payment.id = pip_services3_commons_node_1.IdGenerator.nextLong();
-                payment.system = PaymentSystemV1_1.PaymentSystemV1.PayPal;
-                payment.status = version1_1.PaymentStatusV1.Unconfirmed;
+                payment.system = version1_3.PaymentSystemV1.PayPal;
+                payment.status = version1_2.PaymentStatusV1.Unconfirmed;
                 payment.order_id = response.result.id;
                 payment.order_amount = order.total;
                 payment.order_currency = order.currency_code;
@@ -80,8 +81,8 @@ class PayPalConnector {
             if (response.statusCode === 201) {
                 let payment = new version1_1.PaymentV1();
                 payment.id = pip_services3_commons_node_1.IdGenerator.nextLong();
-                payment.system = PaymentSystemV1_1.PaymentSystemV1.PayPal;
-                payment.status = version1_1.PaymentStatusV1.Unconfirmed;
+                payment.system = version1_3.PaymentSystemV1.PayPal;
+                payment.status = version1_2.PaymentStatusV1.Unconfirmed;
                 payment.order_id = response.result.id;
                 payment.order_amount = order.total;
                 payment.order_currency = order.currency_code;
@@ -117,7 +118,7 @@ class PayPalConnector {
             return payment;
         });
     }
-    makePayoutAsync(correlationId, account, seller, description, amount, currencyCode) {
+    makePayoutAsync(correlationId, account, seller, payoutMethod, description, amount, currencyCode) {
         throw new Error("Method not implemented.");
     }
     checkPayoutAsync(correlationId, account, payout) {
@@ -128,11 +129,11 @@ class PayPalConnector {
     }
     toPublicStatus(status) {
         switch (status) {
-            case 'CREATED': return version1_1.PaymentStatusV1.Created;
-            case 'SAVED': return version1_1.PaymentStatusV1.Unconfirmed;
-            case 'APPROVED': return version1_1.PaymentStatusV1.Authorized;
-            case 'VOIDED': return version1_1.PaymentStatusV1.Canceled;
-            case 'COMPLETED': return version1_1.PaymentStatusV1.Confirmed;
+            case 'CREATED': return version1_2.PaymentStatusV1.Created;
+            case 'SAVED': return version1_2.PaymentStatusV1.Unconfirmed;
+            case 'APPROVED': return version1_2.PaymentStatusV1.Authorized;
+            case 'VOIDED': return version1_2.PaymentStatusV1.Canceled;
+            case 'COMPLETED': return version1_2.PaymentStatusV1.Confirmed;
         }
     }
     refundPaymentAsync(correlationId, account, payment) {
@@ -147,7 +148,7 @@ class PayPalConnector {
             });
             const response = yield client.execute(request);
             if (response.statusCode === 201) {
-                payment.status = version1_1.PaymentStatusV1.Canceled;
+                payment.status = version1_2.PaymentStatusV1.Canceled;
             }
             return payment;
         });
@@ -179,7 +180,7 @@ class PayPalConnector {
             let authorizationId = "";
             if (response.statusCode === 201) {
                 authorizationId = response.result.purchase_units[0].payments.authorizations[0].id;
-                payment.status = version1_1.PaymentStatusV1.Authorized;
+                payment.status = version1_2.PaymentStatusV1.Authorized;
             }
             return authorizationId;
         });
@@ -191,7 +192,7 @@ class PayPalConnector {
             const response = yield client.execute(request);
             if (response.statusCode === 201) {
                 payment.capture_id = response.result.id;
-                payment.status = version1_1.PaymentStatusV1.Confirmed;
+                payment.status = version1_2.PaymentStatusV1.Confirmed;
             }
         });
     }

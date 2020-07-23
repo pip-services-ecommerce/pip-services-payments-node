@@ -1,5 +1,4 @@
 import { IPaymentsConnector } from "../IPaymentsConnector";
-import { PaymentV1, OrderV1, PaymentStatusV1 } from "../../data/version1";
 import { CredentialParams, CredentialResolver } from "pip-services3-components-node";
 import { ConfigParams, BadRequestException, IdGenerator } from "pip-services3-commons-node";
 
@@ -8,12 +7,17 @@ import { isString } from "util";
 
 import { StripeOptions } from './StripeOptions';
 import { PaymentSystemAccountV1 } from "../../data/version1/PaymentSystemAccountV1";
-import { BuyerV1 } from "../../data/version1/BuyerV1";
-import { PaymentMethodV1 } from "../../data/version1/PaymentMethodV1";
-import { PaymentSystemV1 } from "../../data/version1/PaymentSystemV1";
-import { SellerV1 } from "../../data/version1/SellerV1";
-import { PayoutV1 } from "../../data/version1/PayoutV1";
-import { PayoutStatusV1 } from "../../data/version1/PayoutStatusV1";
+
+import { PaymentV1, PayoutMethodTypeV1 } from "../../data/version1";
+import { OrderV1 } from "../../data/version1";
+import { PaymentStatusV1 } from "../../data/version1";
+import { PayoutMethodV1 } from "../../data/version1";
+import { BuyerV1 } from "../../data/version1";
+import { PaymentMethodV1 } from "../../data/version1";
+import { PaymentSystemV1 } from "../../data/version1";
+import { SellerV1 } from "../../data/version1";
+import { PayoutV1 } from "../../data/version1";
+import { PayoutStatusV1 } from "../../data/version1";
 
 export class StripeConnector implements IPaymentsConnector {
 
@@ -67,13 +71,18 @@ export class StripeConnector implements IPaymentsConnector {
         amount: number, currencyCode: string): Promise<PaymentV1> {
 
         if (!paymentMethod || !paymentMethod.id)
-            throw new Error('Payment method id required');
+            throw new BadRequestException(correlationId, 'ERR_PAYMENT_METHOD_REQUIRED', 'Payment method id required');
 
         let client = this.createPaymentSystemClient(correlationId, account);
 
-        let customerId = await this.fromPublicCustomerAsync(client, buyer.id);
-        if (!customerId)
-            throw new Error('Buyer id required');
+        if (!buyer.id)
+            throw new BadRequestException(correlationId, 'ERR_BUYER_REQUIRED', 'Buyer id required').withDetails('buyer', buyer);
+
+        let customer = await this.findItem(p => client.customers.list(p),
+            x => x.metadata['customer_id'] == buyer.id, x => x.id);
+
+        if (!customer)
+            throw new BadRequestException(correlationId, 'ERR_CUSTOMER_NOT_FOUND', 'Customer is not found by id').withDetails('buyer', buyer);
 
         order = order ?? { total: amount, currency_code: currencyCode, id: IdGenerator.nextLong() };
 
@@ -84,7 +93,7 @@ export class StripeConnector implements IPaymentsConnector {
         var intent = await client.paymentIntents.create({
             amount: Math.trunc(order.total * 100),
             currency: order.currency_code,
-            customer: customerId,
+            customer: customer.id,
             payment_method: paymentMethod.id,
             metadata: {
                 'payment_id': payment.id
@@ -101,7 +110,7 @@ export class StripeConnector implements IPaymentsConnector {
 
     async authorizePaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1): Promise<PaymentV1> {
         if (payment.status == PaymentStatusV1.Confirmed)
-            throw new Error('Payment has already been authorized');
+            throw new BadRequestException(correlationId, 'ERR_PAYMENT_STATUS', 'Payment has already been authorized').withDetails('payment', payment);
 
         let client = this.createPaymentSystemClient(correlationId, account);
 
@@ -109,7 +118,7 @@ export class StripeConnector implements IPaymentsConnector {
         var intent = await client.paymentIntents.confirm(intent_id);
 
         if (intent.status != 'succeeded')
-            throw new Error('Cant authorize payment: ' + intent.status);
+            throw new BadRequestException(correlationId, 'ERR_PAYMENT_AUTHORIZE', 'Cant authorize payment').withDetails('intent', intent);
 
         payment.capture_id = payment.order_id;
         payment.status = PaymentStatusV1.Confirmed;
@@ -128,7 +137,7 @@ export class StripeConnector implements IPaymentsConnector {
         let payment_id = intent.metadata['payment_id'];
 
         if (!payment_id || payment.id != payment_id)
-            throw new Error('Invalid payment id');
+            throw new BadRequestException(correlationId, 'ERR_PAYMENT_ID', 'Invalid payment id').withDetails('payment', payment);
 
         payment.status = this.toPublicStatus(intent.status);
         payment.status_details = intent.status;
@@ -139,24 +148,24 @@ export class StripeConnector implements IPaymentsConnector {
 
     async refundPaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1): Promise<PaymentV1> {
         if (payment.status != PaymentStatusV1.Confirmed)
-            throw new Error('Payment is not confirmed');
+            throw new BadRequestException(correlationId, 'ERR_PAYMENT_STATUS', 'Payment is not confirmed')
+                .withDetails('payment', payment);
 
         if (!payment.capture_id)
-            throw new Error('Payment does not contain an identifier of intent');
+            throw new BadRequestException(correlationId, 'ERR_PAYMENT_STATUS', 'Payment does not contain an identifier of intent (capture_id)')
+                .withDetails('payment', payment);
 
         let client = this.createPaymentSystemClient(correlationId, account);
 
         let intent = await client.paymentIntents.retrieve(payment.capture_id);
         if (intent) {
-            if (intent.status.startsWith('requires_'))
-            {
+            if (intent.status.startsWith('requires_')) {
                 intent = await client.paymentIntents.cancel(payment.capture_id);
 
                 payment.status = PaymentStatusV1.Canceled;
                 payment.status_details = 'cancel ' + intent.status;
             }
-            else if (intent.status == 'succeeded')
-            {
+            else if (intent.status == 'succeeded') {
                 let refund = await client.refunds.create({
                     payment_intent: payment.capture_id
                 });
@@ -170,12 +179,15 @@ export class StripeConnector implements IPaymentsConnector {
     }
 
     async makePayoutAsync(correlationId: string, account: PaymentSystemAccountV1,
-        seller: SellerV1, description: string, amount: number, currencyCode: string): Promise<PayoutV1> {
+        seller: SellerV1, payoutMethod: PayoutMethodV1,
+        description: string, amount: number, currencyCode: string): Promise<PayoutV1> {
         let client = this.createPaymentSystemClient(correlationId, account);
 
-        let sellerAcc: Stripe.Account = await this.findSellerAccount(client, seller.id);
+        let sellerAcc: Stripe.Account = await this.findItem(p => client.accounts.list(p),
+            x => x.metadata['seller_id'] == seller.id, x => x.id);
+
         if (!sellerAcc) {
-            sellerAcc = await this.createSellerAccount(client, seller, null);
+            sellerAcc = await this.createSellerAccount(client, seller, payoutMethod);
         }
 
         var transfer = await client.transfers.create({
@@ -243,21 +255,6 @@ export class StripeConnector implements IPaymentsConnector {
         }
     }
 
-    private async fromPublicCustomerAsync(client: Stripe, customer_id: string): Promise<string> {
-        if (customer_id) {
-            var customers = await client.customers.list({});
-
-            for (let index = 0; index < customers.data.length; index++) {
-                const customer = customers.data[index];
-                if (customer.metadata['customer_id'] == customer_id) {
-                    return customer.id;
-                }
-            }
-        }
-
-        return null;
-    }
-
     private createPaymentSystemClient(correlationId: string, account: PaymentSystemAccountV1) {
         let secretKey: string;
 
@@ -284,7 +281,9 @@ export class StripeConnector implements IPaymentsConnector {
         return client;
     }
 
-    private async createSellerAccount(client: Stripe, seller: SellerV1, paymentMethod: any): Promise<Stripe.Account> {
+    private async createSellerAccount(client: Stripe, seller: SellerV1, payoutMethod: PayoutMethodV1): Promise<Stripe.Account> {
+        let payoutToken = await this.createPayoutToken(client, payoutMethod);
+
         return await client.accounts.create({
             email: seller.email,
             country: seller.address.country_code,
@@ -314,7 +313,7 @@ export class StripeConnector implements IPaymentsConnector {
                 mcc: '1520',
                 url: 'http://unknown.com/'
             },
-            external_account: 'tok_visa_debit_us_transferSuccess',
+            external_account: payoutToken,
             requested_capabilities: [
                 //'card_payments',
                 'transfers',
@@ -323,35 +322,77 @@ export class StripeConnector implements IPaymentsConnector {
                 ip: seller.ip_address,
                 date: Math.floor(Date.now() / 1000),
             },
-            //external_account: 
             metadata: {
                 seller_id: seller.id
             },
         });
     }
 
-    private async findSellerAccount(client: Stripe, seller_id: string): Promise<Stripe.Account> {
-        let starting_after: string;
-        let page: Stripe.ApiList<Stripe.Account>;
+    async createPayoutToken(client: Stripe, payoutMethod: PayoutMethodV1): Promise<string> {
+        let params: Stripe.TokenCreateParams;
+
+        if (payoutMethod.token) return payoutMethod.token;
+
+        if (payoutMethod.type == PayoutMethodTypeV1.BankAccount) {
+            let account = payoutMethod.bank_account;
+
+            params = {
+                bank_account: {
+                    account_number: account.number,
+                    country: account.country,
+                    currency: account.currency,
+                    account_holder_name: account.first_name + ' ' + account.last_name,
+                    account_holder_type: 'individual',
+                    routing_number: account.routing_number
+                },
+            };
+        }
+        else if (payoutMethod.type == PayoutMethodTypeV1.DebitCard) {
+            let card = payoutMethod.card;
+
+            params = {
+                card: {
+                    //name: card.?
+                    //currency: card.?
+                    exp_month: card.expire_month.toString(),
+                    exp_year: card.expire_year.toString(),
+                    number: card.number,
+                    cvc: card.ccv,
+                    address_city: payoutMethod.billing_address.city,
+                    address_country: payoutMethod.billing_address.country_code,
+                    address_line1: payoutMethod.billing_address.line1,
+                    address_line2: payoutMethod.billing_address.line2,
+                    address_state: payoutMethod.billing_address.state,
+                    address_zip: payoutMethod.billing_address.postal_code,
+                },
+            };
+        }
+
+        let token = await client.tokens.create(params);
+        return token.id;
+    }
+
+    private async findItem<T>(list: (params: Stripe.PaginationParams) => Promise<Stripe.ApiList<T>>,
+        predicate: (item: T) => boolean,
+        getId: (item: T) => string): Promise<T> {
+        let page: Stripe.ApiList<T>;
 
         do {
-            let params: Stripe.AccountListParams = {
+            let params: Stripe.PaginationParams = {
                 limit: 100,
             };
 
-            if (starting_after) params.starting_after = starting_after;
+            if (page && page.data.length > 0)
+                params.starting_after = getId(page.data[page.data.length - 1]);
 
-            page = await client.accounts.list({
-                limit: 100,
-                starting_after: starting_after
-            });
+            page = await list(params);
 
-            let account = page.data.find(x => x.metadata['seller_id'] == seller_id);
-            if (account) return account;
+            let item = page.data.find(predicate);
+            if (item) return item;
+
         }
         while (page.has_more);
 
         return null;
     }
-
 }

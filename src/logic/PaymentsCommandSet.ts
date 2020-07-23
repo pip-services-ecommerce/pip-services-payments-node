@@ -6,7 +6,7 @@ import { TypeCode } from 'pip-services3-commons-node';
 import { Parameters } from 'pip-services3-commons-node';
 
 import { IPaymentsController } from './IPaymentsController';
-import { OrderV1Schema, PaymentV1Schema } from '../data/version1';
+import { OrderV1Schema, PaymentV1Schema, PayoutMethodV1, PayoutMethodV1Schema } from '../data/version1';
 import { PaymentSystemAccountV1Schema } from '../data/version1/PaymentSystemAccountV1Schema';
 import { BuyerV1Schema } from '../data/version1/BuyerV1Schema';
 import { PaymentMethodV1Schema } from '../data/version1/PaymentMethodV1Schema';
@@ -142,6 +142,7 @@ export class PaymentsCommandSet extends CommandSet {
                 .withRequiredProperty('system', TypeCode.String)
                 .withRequiredProperty('account', new PaymentSystemAccountV1Schema())
                 .withRequiredProperty('seller', new SellerV1Schema())
+                .withOptionalProperty('payout_method', new PayoutMethodV1Schema())
                 .withOptionalProperty('description', TypeCode.String)
                 .withRequiredProperty('amount', TypeCode.Float)
                 .withRequiredProperty('currency_code', TypeCode.String),
@@ -150,11 +151,12 @@ export class PaymentsCommandSet extends CommandSet {
                 let system = args.getAsString('system');
                 let account = args.getAsObject('account');
                 let seller = args.getAsObject('seller');
+                let payoutMethod = args.getAsObject('payout_method');
                 let description = args.getAsNullableString('description');
                 let amount = args.getAsFloat('amount');
                 let currencyCode = args.getAsString('currency_code');
 
-                this._controller.makePayout(correlationId, system, account, seller, description,
+                this._controller.makePayout(correlationId, system, account, seller, payoutMethod, description,
                     amount, currencyCode, callback);
             }
         );

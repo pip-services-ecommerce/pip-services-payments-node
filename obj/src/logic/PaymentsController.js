@@ -111,11 +111,11 @@ class PaymentsController {
                 callback(err, null);
         });
     }
-    makePayout(correlationId, system, account, seller, description, amount, currencyCode, callback) {
+    makePayout(correlationId, system, account, seller, payoutMethod, description, amount, currencyCode, callback) {
         var connector = this.getSystemConnector(correlationId, system, callback);
         if (!connector)
             return;
-        connector.makePayoutAsync(correlationId, account, seller, description, amount, currencyCode).then(payout => {
+        connector.makePayoutAsync(correlationId, account, seller, payoutMethod, description, amount, currencyCode).then(payout => {
             if (callback)
                 callback(null, payout);
         }).catch(err => {
@@ -139,7 +139,7 @@ class PaymentsController {
         var connector = this.getSystemConnector(correlationId, system, callback);
         if (!connector)
             return;
-        connector.checkPayoutAsync(correlationId, account, payout).then(payout => {
+        connector.cancelPayoutAsync(correlationId, account, payout).then(payout => {
             if (callback)
                 callback(null, payout);
         }).catch(err => {

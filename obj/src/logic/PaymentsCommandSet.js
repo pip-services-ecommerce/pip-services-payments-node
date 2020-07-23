@@ -99,16 +99,18 @@ class PaymentsCommandSet extends pip_services3_commons_node_1.CommandSet {
             .withRequiredProperty('system', pip_services3_commons_node_4.TypeCode.String)
             .withRequiredProperty('account', new PaymentSystemAccountV1Schema_1.PaymentSystemAccountV1Schema())
             .withRequiredProperty('seller', new SellerV1Schema_1.SellerV1Schema())
+            .withOptionalProperty('payout_method', new version1_1.PayoutMethodV1Schema())
             .withOptionalProperty('description', pip_services3_commons_node_4.TypeCode.String)
             .withRequiredProperty('amount', pip_services3_commons_node_4.TypeCode.Float)
             .withRequiredProperty('currency_code', pip_services3_commons_node_4.TypeCode.String), (correlationId, args, callback) => {
             let system = args.getAsString('system');
             let account = args.getAsObject('account');
             let seller = args.getAsObject('seller');
+            let payoutMethod = args.getAsObject('payout_method');
             let description = args.getAsNullableString('description');
             let amount = args.getAsFloat('amount');
             let currencyCode = args.getAsString('currency_code');
-            this._controller.makePayout(correlationId, system, account, seller, description, amount, currencyCode, callback);
+            this._controller.makePayout(correlationId, system, account, seller, payoutMethod, description, amount, currencyCode, callback);
         });
     }
     makeCheckPayoutCommand() {

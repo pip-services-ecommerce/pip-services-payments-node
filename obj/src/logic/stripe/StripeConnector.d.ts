@@ -1,11 +1,14 @@
 import { IPaymentsConnector } from "../IPaymentsConnector";
-import { PaymentV1, OrderV1 } from "../../data/version1";
 import { ConfigParams } from "pip-services3-commons-node";
+import Stripe from 'stripe';
 import { PaymentSystemAccountV1 } from "../../data/version1/PaymentSystemAccountV1";
-import { BuyerV1 } from "../../data/version1/BuyerV1";
-import { PaymentMethodV1 } from "../../data/version1/PaymentMethodV1";
-import { SellerV1 } from "../../data/version1/SellerV1";
-import { PayoutV1 } from "../../data/version1/PayoutV1";
+import { PaymentV1 } from "../../data/version1";
+import { OrderV1 } from "../../data/version1";
+import { PayoutMethodV1 } from "../../data/version1";
+import { BuyerV1 } from "../../data/version1";
+import { PaymentMethodV1 } from "../../data/version1";
+import { SellerV1 } from "../../data/version1";
+import { PayoutV1 } from "../../data/version1";
 export declare class StripeConnector implements IPaymentsConnector {
     private _credentialsResolver;
     private _credentials;
@@ -21,12 +24,12 @@ export declare class StripeConnector implements IPaymentsConnector {
     authorizePaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1): Promise<PaymentV1>;
     checkPaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1): Promise<PaymentV1>;
     refundPaymentAsync(correlationId: string, account: PaymentSystemAccountV1, payment: PaymentV1): Promise<PaymentV1>;
-    makePayoutAsync(correlationId: string, account: PaymentSystemAccountV1, seller: SellerV1, description: string, amount: number, currencyCode: string): Promise<PayoutV1>;
+    makePayoutAsync(correlationId: string, account: PaymentSystemAccountV1, seller: SellerV1, payoutMethod: PayoutMethodV1, description: string, amount: number, currencyCode: string): Promise<PayoutV1>;
     checkPayoutAsync(correlationId: string, account: PaymentSystemAccountV1, payout: PayoutV1): Promise<PayoutV1>;
     cancelPayoutAsync(correlationId: string, account: PaymentSystemAccountV1, payout: PayoutV1): Promise<PayoutV1>;
     private toPublicStatus;
-    private fromPublicCustomerAsync;
     private createPaymentSystemClient;
     private createSellerAccount;
-    private findSellerAccount;
+    createPayoutToken(client: Stripe, payoutMethod: PayoutMethodV1): Promise<string>;
+    private findItem;
 }

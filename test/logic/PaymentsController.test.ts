@@ -5,7 +5,7 @@ import { ConfigParams } from 'pip-services3-commons-node';
 import { Descriptor } from 'pip-services3-commons-node';
 import { References } from 'pip-services3-commons-node';
 
-import { PaymentStatusV1, OrderV1, PaymentSystemV1, PaymentV1 } from '../../src/data/version1';
+import { PaymentStatusV1, OrderV1, PaymentSystemV1, PaymentV1, PayoutMethodTypeV1 } from '../../src/data/version1';
 import { PaymentsController } from '../../src/logic/PaymentsController';
 
 import { TestModel } from '../data/TestModel';
@@ -260,6 +260,12 @@ suite('PaymentsController', () => {
                             postal_code: '99524',
                             state: 'Alaska'
                         }
+                    },
+                    {
+                        // https://stripe.com/docs/connect/testing#test-debit-card-numbers
+                        id: '1',
+                        type: PayoutMethodTypeV1.DebitCard,    
+                        token: 'tok_visa_debit_us_transferSuccess'
                     },
                     'Tests payout',
                     5,

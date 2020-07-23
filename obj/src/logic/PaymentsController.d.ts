@@ -6,6 +6,7 @@ import { IReferenceable } from 'pip-services3-commons-node';
 import { CommandSet } from 'pip-services3-commons-node';
 import { ICommandable } from 'pip-services3-commons-node';
 import { PaymentV1 } from '../data/version1';
+import { PayoutMethodV1 } from '../data/version1';
 import { OrderV1 } from '../data/version1';
 import { IPaymentsController } from './IPaymentsController';
 import { BuyerV1 } from '../data/version1/BuyerV1';
@@ -30,7 +31,7 @@ export declare class PaymentsController implements IPaymentsController, IConfigu
     authorizePayment(correlationId: string, system: string, account: PaymentSystemAccountV1, payment: PaymentV1, callback: (err: any, payment: PaymentV1) => void): void;
     checkPayment(correlationId: string, system: string, account: PaymentSystemAccountV1, payment: PaymentV1, callback: (err: any, payment: PaymentV1) => void): void;
     refundPayment(correlationId: string, system: string, account: PaymentSystemAccountV1, payment: PaymentV1, callback: (err: any, payment: PaymentV1) => void): void;
-    makePayout(correlationId: string, system: string, account: PaymentSystemAccountV1, seller: SellerV1, description: string, amount: number, currencyCode: string, callback: (err: any, payout: PayoutV1) => void): void;
+    makePayout(correlationId: string, system: string, account: PaymentSystemAccountV1, seller: SellerV1, payoutMethod: PayoutMethodV1, description: string, amount: number, currencyCode: string, callback: (err: any, payout: PayoutV1) => void): void;
     checkPayout(correlationId: string, system: string, account: PaymentSystemAccountV1, payout: PayoutV1, callback: (err: any, payout: PayoutV1) => void): void;
     cancelPayout(correlationId: string, system: string, account: PaymentSystemAccountV1, payout: PayoutV1, callback: (err: any, payout: PayoutV1) => void): void;
     private getSystemConnector;
