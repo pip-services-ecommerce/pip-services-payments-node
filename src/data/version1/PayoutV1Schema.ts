@@ -9,5 +9,9 @@ export class PayoutV1Schema extends ObjectSchema {
         this.withRequiredProperty('id', TypeCode.String);
         this.withRequiredProperty('system', TypeCode.String);
         this.withRequiredProperty('status', TypeCode.String);
+
+        this.withOptionalProperty('status_details', TypeCode.String);
+        this.withOptionalProperty('account_id', TypeCode.String);
+        this.withOptionalProperty('reversal_id', TypeCode.String);
     }
 }

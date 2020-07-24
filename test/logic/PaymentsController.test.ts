@@ -5,7 +5,7 @@ import { ConfigParams } from 'pip-services3-commons-node';
 import { Descriptor } from 'pip-services3-commons-node';
 import { References } from 'pip-services3-commons-node';
 
-import { PaymentStatusV1, OrderV1, PaymentSystemV1, PaymentV1, PayoutMethodTypeV1 } from '../../src/data/version1';
+import { PaymentStatusV1, OrderV1, PaymentSystemV1, PaymentV1 } from '../../src/data/version1';
 import { PaymentsController } from '../../src/logic/PaymentsController';
 
 import { TestModel } from '../data/TestModel';
@@ -80,7 +80,7 @@ suite('PaymentsController', () => {
                     },
                     order,
                     {   // payment method
-                        id: 'pm_1H5YyTIY0H5OlfLSUazwK2GB',
+                        id: TestModel.PAYMENT_METHOD_ID,
                         type: 'card'
                     },
                     order.total,
@@ -126,7 +126,7 @@ suite('PaymentsController', () => {
                     },
                     order,
                     {   // payment method
-                        id: 'pm_1H5YyTIY0H5OlfLSUazwK2GB',
+                        id: TestModel.PAYMENT_METHOD_ID,
                         type: 'card'
                     },
                     order.total,
@@ -261,12 +261,6 @@ suite('PaymentsController', () => {
                             state: 'Alaska'
                         }
                     },
-                    {
-                        // https://stripe.com/docs/connect/testing#test-debit-card-numbers
-                        id: '1',
-                        type: PayoutMethodTypeV1.DebitCard,    
-                        token: 'tok_visa_debit_us_transferSuccess'
-                    },
                     'Tests payout',
                     5,
                     'USD',
@@ -280,7 +274,6 @@ suite('PaymentsController', () => {
 
                         assert.isObject(payout);
                         assert.isNotNull(payout.id);
-                        assert.isNotNull(payout.transfer_id);
                         assert.isNotNull(payout.account_id);
                         assert.equal(payout.status, PaymentStatusV1.Confirmed);
 
@@ -312,7 +305,6 @@ suite('PaymentsController', () => {
 
                         assert.isObject(payout);
                         assert.isNotNull(payout.id);
-                        assert.isNotNull(payout.transfer_id);
                         assert.isNotNull(payout.account_id);
                         assert.equal(payout.status, PaymentStatusV1.Confirmed);
 
@@ -343,8 +335,8 @@ suite('PaymentsController', () => {
 
                         assert.isObject(payout);
                         assert.isNotNull(payout.id);
-                        assert.isNotNull(payout.transfer_id);
                         assert.isNotNull(payout.account_id);
+                        assert.isNotNull(payout.reversal_id);
 
                         assert.equal(payout.status, PaymentStatusV1.Canceled);
                         assert.equal(payout.system, PaymentSystemV1.Stripe);

@@ -101,7 +101,7 @@ suite('PaymentsHttpServiceV1', () => {
                         },
                         order: order,
                         payment_method: {
-                            id: 'pm_1H5YyTIY0H5OlfLSUazwK2GB',
+                            id: TestModel.PAYMENT_METHOD_ID,
                             type: 'card'
                         },
                         amount: order.total,
@@ -176,7 +176,7 @@ suite('PaymentsHttpServiceV1', () => {
                         },
                         order: order,
                         payment_method: {
-                            id: 'pm_1H5YyTIY0H5OlfLSUazwK2GB',
+                            id: TestModel.PAYMENT_METHOD_ID,
                             type: 'card'
                         },
                         amount: order.total,

@@ -118,7 +118,7 @@ class PayPalConnector {
             return payment;
         });
     }
-    makePayoutAsync(correlationId, account, seller, payoutMethod, description, amount, currencyCode) {
+    makePayoutAsync(correlationId, account, seller, description, amount, currencyCode) {
         throw new Error("Method not implemented.");
     }
     checkPayoutAsync(correlationId, account, payout) {

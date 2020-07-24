@@ -7,7 +7,6 @@ import { PaymentV1 } from "../data/version1";
 import { PaymentSystemAccountV1 } from "../data/version1";
 import { PaymentMethodV1 } from "../data/version1";
 import { BuyerV1 } from "../data/version1";
-import { PayoutMethodV1 } from "../data/version1";
 import { PayoutV1 } from "../data/version1";
 import { SellerV1 } from "../data/version1";
 
@@ -30,7 +29,7 @@ export interface IPaymentsConnector extends IOpenable, IConfigurable {
         payment: PaymentV1): Promise<PaymentV1>;
 
     makePayoutAsync(correlationId: string, account: PaymentSystemAccountV1, 
-        seller: SellerV1, payoutMethod: PayoutMethodV1, 
+        seller: SellerV1, 
         description: string, amount: number, currencyCode: string): Promise<PayoutV1>;
 
     checkPayoutAsync(correlationId: string, account: PaymentSystemAccountV1, 

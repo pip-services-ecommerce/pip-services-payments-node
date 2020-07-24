@@ -12,7 +12,6 @@ import { ICommandable } from 'pip-services3-commons-node';
 
 import { PaymentV1 } from '../data/version1';
 import { PaymentSystemV1 } from '../data/version1';
-import { PayoutMethodV1 } from '../data/version1';
 import { OrderV1 } from '../data/version1';
 
 import { IPaymentsController } from './IPaymentsController';
@@ -163,13 +162,13 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
     }
 
     public makePayout(correlationId: string, system: string, account: PaymentSystemAccountV1,
-        seller: SellerV1, payoutMethod: PayoutMethodV1, description: string, amount: number, currencyCode: string,
+        seller: SellerV1, description: string, amount: number, currencyCode: string,
         callback: (err: any, payout: PayoutV1) => void): void {
 
         var connector = this.getSystemConnector(correlationId, system, callback);
         if (!connector) return;
 
-        connector.makePayoutAsync(correlationId, account, seller, payoutMethod, description, amount, currencyCode).then(payout => {
+        connector.makePayoutAsync(correlationId, account, seller, description, amount, currencyCode).then(payout => {
             if (callback) callback(null, payout);
         }).catch(err => {
             if (callback) callback(err, null);

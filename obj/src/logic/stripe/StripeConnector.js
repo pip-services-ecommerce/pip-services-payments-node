@@ -59,24 +59,22 @@ class StripeConnector {
                 throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_METHOD_REQUIRED', 'Payment method id required');
             let client = this.createPaymentSystemClient(correlationId, account);
             if (!buyer.id)
-                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_BUYER_REQUIRED', 'Buyer id required').withDetails('buyer', buyer);
+                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_BUYER_REQUIRED', 'Buyer id required')
+                    .withDetails('buyer', buyer);
             let customer = yield this.findItem(p => client.customers.list(p), x => x.metadata['customer_id'] == buyer.id, x => x.id);
             if (!customer)
-                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_CUSTOMER_NOT_FOUND', 'Customer is not found by id').withDetails('buyer', buyer);
+                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_CUSTOMER_NOT_FOUND', 'Customer is not found by id')
+                    .withDetails('buyer', buyer);
             order = (order !== null && order !== void 0 ? order : { total: amount, currency_code: currencyCode, id: pip_services3_commons_node_1.IdGenerator.nextLong() });
-            let payment = new version1_1.PaymentV1();
-            payment.id = pip_services3_commons_node_1.IdGenerator.nextLong();
-            payment.system = version1_3.PaymentSystemV1.Stripe;
             var intent = yield client.paymentIntents.create({
                 amount: Math.trunc(order.total * 100),
                 currency: order.currency_code,
                 customer: customer.id,
-                payment_method: paymentMethod.id,
-                metadata: {
-                    'payment_id': payment.id
-                }
+                payment_method: paymentMethod.id
             });
-            payment.order_id = intent.id;
+            let payment = new version1_1.PaymentV1();
+            payment.id = intent.id;
+            payment.system = version1_3.PaymentSystemV1.Stripe;
             payment.confirm_data = intent.client_secret;
             payment.status = version1_2.PaymentStatusV1.Unconfirmed;
             payment.status_details = intent.status;
@@ -86,26 +84,24 @@ class StripeConnector {
     authorizePaymentAsync(correlationId, account, payment) {
         return __awaiter(this, void 0, void 0, function* () {
             if (payment.status == version1_2.PaymentStatusV1.Confirmed)
-                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_STATUS', 'Payment has already been authorized').withDetails('payment', payment);
+                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_STATUS', 'Payment has already been authorized')
+                    .withDetails('payment', payment);
             let client = this.createPaymentSystemClient(correlationId, account);
-            var intent_id = payment.order_id;
-            var intent = yield client.paymentIntents.confirm(intent_id);
+            var intent = yield client.paymentIntents.confirm(payment.id);
             if (intent.status != 'succeeded')
-                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_AUTHORIZE', 'Cant authorize payment').withDetails('intent', intent);
-            payment.capture_id = payment.order_id;
+                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_AUTHORIZE', 'Cant authorize payment')
+                    .withDetails('intent', intent);
             payment.status = version1_2.PaymentStatusV1.Confirmed;
             return payment;
         });
     }
     checkPaymentAsync(correlationId, account, payment) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!payment.order_id)
+            if (!payment.id)
                 return null;
             let client = this.createPaymentSystemClient(correlationId, account);
-            var intent_id = payment.order_id;
-            var intent = yield client.paymentIntents.retrieve(intent_id);
-            let payment_id = intent.metadata['payment_id'];
-            if (!payment_id || payment.id != payment_id)
+            var intent = yield client.paymentIntents.retrieve(payment.id);
+            if (!intent)
                 throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_ID', 'Invalid payment id').withDetails('payment', payment);
             payment.status = this.toPublicStatus(intent.status);
             payment.status_details = intent.status;
@@ -115,23 +111,17 @@ class StripeConnector {
     }
     refundPaymentAsync(correlationId, account, payment) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (payment.status != version1_2.PaymentStatusV1.Confirmed)
-                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_STATUS', 'Payment is not confirmed')
-                    .withDetails('payment', payment);
-            if (!payment.capture_id)
-                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYMENT_STATUS', 'Payment does not contain an identifier of intent (capture_id)')
-                    .withDetails('payment', payment);
             let client = this.createPaymentSystemClient(correlationId, account);
-            let intent = yield client.paymentIntents.retrieve(payment.capture_id);
+            let intent = yield client.paymentIntents.retrieve(payment.id);
             if (intent) {
                 if (intent.status.startsWith('requires_')) {
-                    intent = yield client.paymentIntents.cancel(payment.capture_id);
+                    intent = yield client.paymentIntents.cancel(payment.id);
                     payment.status = version1_2.PaymentStatusV1.Canceled;
                     payment.status_details = 'cancel ' + intent.status;
                 }
                 else if (intent.status == 'succeeded') {
                     let refund = yield client.refunds.create({
-                        payment_intent: payment.capture_id
+                        payment_intent: payment.id
                     });
                     payment.status = version1_2.PaymentStatusV1.Canceled;
                     payment.status_details = 'refund ' + refund.status;
@@ -140,36 +130,36 @@ class StripeConnector {
             return payment;
         });
     }
-    makePayoutAsync(correlationId, account, seller, payoutMethod, description, amount, currencyCode) {
+    makePayoutAsync(correlationId, account, seller, description, amount, currencyCode) {
         return __awaiter(this, void 0, void 0, function* () {
             let client = this.createPaymentSystemClient(correlationId, account);
-            let sellerAcc = yield this.findItem(p => client.accounts.list(p), x => x.metadata['seller_id'] == seller.id, x => x.id);
-            if (!sellerAcc) {
-                sellerAcc = yield this.createSellerAccount(client, seller, payoutMethod);
-            }
+            var customAccount = yield this.findCustomAccountAsync(client, seller.id);
+            if (!customAccount)
+                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYOUT', 'Custom account not found for seller')
+                    .withDetails('seller', seller);
+            yield this.updateSellerAccount(client, customAccount, seller);
             var transfer = yield client.transfers.create({
                 amount: amount,
                 currency: currencyCode,
-                destination: sellerAcc.id,
+                destination: customAccount.id,
                 description: description,
             });
             var payout = {
-                id: pip_services3_commons_node_1.IdGenerator.nextLong(),
+                id: transfer.id,
                 system: version1_3.PaymentSystemV1.Stripe,
                 status: version1_4.PayoutStatusV1.Confirmed,
-                transfer_id: transfer.id,
-                account_id: sellerAcc.id
+                account_id: customAccount.id
             };
             return payout;
         });
     }
     checkPayoutAsync(correlationId, account, payout) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!payout.transfer_id)
-                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYOUT', 'Transfer id not specified')
+            if (!payout.id)
+                throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_PAYOUT', 'Payout id not specified')
                     .withDetails('payout', payout);
             let client = this.createPaymentSystemClient(correlationId, account);
-            let transfer = yield client.transfers.retrieve(payout.transfer_id, {
+            let transfer = yield client.transfers.retrieve(payout.id, {
                 expand: ['reversals']
             });
             payout.account_id = util_1.isString(transfer.destination) ? transfer.destination : transfer.destination.id;
@@ -181,10 +171,11 @@ class StripeConnector {
     cancelPayoutAsync(correlationId, account, payout) {
         return __awaiter(this, void 0, void 0, function* () {
             let client = this.createPaymentSystemClient(correlationId, account);
-            let reversal = client.transfers.createReversal(payout.transfer_id, {
+            let reversal = yield client.transfers.createReversal(payout.id, {
                 refund_application_fee: true
             });
             if (reversal != null) {
+                payout.reversal_id = reversal.id;
                 payout.status = version1_4.PayoutStatusV1.Canceled;
                 return payout;
             }
@@ -224,92 +215,59 @@ class StripeConnector {
         });
         return client;
     }
-    createSellerAccount(client, seller, payoutMethod) {
+    updateSellerAccount(client, customAccount, seller) {
         return __awaiter(this, void 0, void 0, function* () {
-            let payoutToken = yield this.createPayoutToken(client, payoutMethod);
-            return yield client.accounts.create({
-                email: seller.email,
-                country: seller.address.country_code,
-                type: 'custom',
-                business_type: 'individual',
-                individual: {
-                    address: {
-                        city: seller.address.city,
-                        country: seller.address.country_code,
-                        line1: seller.address.line1,
-                        line2: seller.address.line2,
-                        postal_code: seller.address.postal_code,
-                        state: seller.address.state
-                    },
+            if (!customAccount.payouts_enabled) {
+                return yield client.accounts.update(customAccount.id, {
                     email: seller.email,
-                    first_name: seller.first_name,
-                    last_name: seller.last_name,
-                    phone: seller.phone,
-                    ssn_last_4: seller.ssn_last4,
-                    dob: {
-                        day: seller.birth_date.getUTCDate(),
-                        month: seller.birth_date.getUTCMonth(),
-                        year: seller.birth_date.getUTCFullYear()
-                    }
-                },
-                business_profile: {
-                    mcc: '1520',
-                    url: 'http://unknown.com/'
-                },
-                external_account: payoutToken,
-                requested_capabilities: [
-                    //'card_payments',
-                    'transfers',
-                ],
-                tos_acceptance: {
-                    ip: seller.ip_address,
-                    date: Math.floor(Date.now() / 1000),
-                },
-                metadata: {
-                    seller_id: seller.id
-                },
-            });
+                    // country: seller.address.country_code,
+                    // type: 'custom',
+                    business_type: 'individual',
+                    individual: {
+                        address: {
+                            city: seller.address.city,
+                            country: seller.address.country_code,
+                            line1: seller.address.line1,
+                            line2: seller.address.line2,
+                            postal_code: seller.address.postal_code,
+                            state: seller.address.state
+                        },
+                        email: seller.email,
+                        first_name: seller.first_name,
+                        last_name: seller.last_name,
+                        phone: seller.phone,
+                        ssn_last_4: seller.ssn_last4,
+                        dob: {
+                            day: seller.birth_date.getUTCDate(),
+                            month: seller.birth_date.getUTCMonth(),
+                            year: seller.birth_date.getUTCFullYear()
+                        }
+                    },
+                    business_profile: {
+                        mcc: '1520',
+                        url: 'http://unknown.com/'
+                    },
+                    requested_capabilities: [
+                        //'card_payments',
+                        'transfers',
+                    ],
+                    tos_acceptance: {
+                        ip: seller.ip_address,
+                        date: Math.floor(Date.now() / 1000),
+                    },
+                    metadata: {
+                        seller_id: seller.id
+                    },
+                });
+            }
         });
     }
-    createPayoutToken(client, payoutMethod) {
+    findCustomAccountAsync(client, customer_id) {
         return __awaiter(this, void 0, void 0, function* () {
-            let params;
-            if (payoutMethod.token)
-                return payoutMethod.token;
-            if (payoutMethod.type == version1_1.PayoutMethodTypeV1.BankAccount) {
-                let account = payoutMethod.bank_account;
-                params = {
-                    bank_account: {
-                        account_number: account.number,
-                        country: account.country,
-                        currency: account.currency,
-                        account_holder_name: account.first_name + ' ' + account.last_name,
-                        account_holder_type: 'individual',
-                        routing_number: account.routing_number
-                    },
-                };
+            if (customer_id) {
+                return yield this.findItem(p => client.accounts.list(p), x => x.metadata['customer_id'] == customer_id, x => x.id);
             }
-            else if (payoutMethod.type == version1_1.PayoutMethodTypeV1.DebitCard) {
-                let card = payoutMethod.card;
-                params = {
-                    card: {
-                        //name: card.?
-                        //currency: card.?
-                        exp_month: card.expire_month.toString(),
-                        exp_year: card.expire_year.toString(),
-                        number: card.number,
-                        cvc: card.ccv,
-                        address_city: payoutMethod.billing_address.city,
-                        address_country: payoutMethod.billing_address.country_code,
-                        address_line1: payoutMethod.billing_address.line1,
-                        address_line2: payoutMethod.billing_address.line2,
-                        address_state: payoutMethod.billing_address.state,
-                        address_zip: payoutMethod.billing_address.postal_code,
-                    },
-                };
-            }
-            let token = yield client.tokens.create(params);
-            return token.id;
+            return null;
         });
     }
     findItem(list, predicate, getId) {

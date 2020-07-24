@@ -8,6 +8,9 @@ class PayoutV1Schema extends pip_services3_commons_node_1.ObjectSchema {
         this.withRequiredProperty('id', pip_services3_commons_node_2.TypeCode.String);
         this.withRequiredProperty('system', pip_services3_commons_node_2.TypeCode.String);
         this.withRequiredProperty('status', pip_services3_commons_node_2.TypeCode.String);
+        this.withOptionalProperty('status_details', pip_services3_commons_node_2.TypeCode.String);
+        this.withOptionalProperty('account_id', pip_services3_commons_node_2.TypeCode.String);
+        this.withOptionalProperty('reversal_id', pip_services3_commons_node_2.TypeCode.String);
     }
 }
 exports.PayoutV1Schema = PayoutV1Schema;

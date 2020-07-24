@@ -8,7 +8,6 @@ import { OrderV1, PaymentV1 } from '../data/version1';
 import { SellerV1 } from '../data/version1/SellerV1';
 import { PayoutV1 } from '../data/version1/PayoutV1';
 import { PaymentSystemAccountV1 } from '../data/version1/PaymentSystemAccountV1';
-import { PayoutMethodV1 } from '../data/version1/PayoutMethodV1';
 
 export interface IPaymentsController {
     makePayment(correlationId: string, system: string, account: PaymentSystemAccountV1,
@@ -34,7 +33,7 @@ export interface IPaymentsController {
         callback: (err: any, payment: PaymentV1) => void): void;
 
     makePayout(correlationId: string, system: string, account: PaymentSystemAccountV1,
-        seller: SellerV1, payoutMethod: PayoutMethodV1, 
+        seller: SellerV1, 
         description: string, amount: number, currencyCode: string,
         callback: (err: any, payout: PayoutV1) => void): void;
 

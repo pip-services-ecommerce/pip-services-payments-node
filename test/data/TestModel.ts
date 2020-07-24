@@ -5,6 +5,8 @@ import { OrderItemV1 } from "../../src/data/version1/OrderItemV1";
 
 export class TestModel
 {
+    static PAYMENT_METHOD_ID : string = 'pm_1H8X9oIY0H5OlfLSfjrVgJ1R';
+    
     static createOrder() : OrderV1
     {
         let order = new OrderV1();

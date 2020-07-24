@@ -4,7 +4,6 @@ export declare class PayoutV1 implements IStringIdentifiable {
     system: string;
     status: string;
     status_details?: string;
-    transfer_id?: string;
     account_id?: string;
     reversal_id?: string;
 }

@@ -7,7 +7,6 @@ export class PayoutV1 implements IStringIdentifiable {
     
     public status_details?: string;
 
-    public transfer_id?: string;
     public account_id?: string;
     public reversal_id?: string;
 }

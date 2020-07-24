@@ -12,7 +12,6 @@ import { PaymentStatusV1 } from '../../data/version1';
 import { PayPalOrder } from './PayPalOrder';
 import { PaymentSystemAccountV1 } from '../../data/version1';
 import { BuyerV1 } from '../../data/version1';
-import { PayoutMethodV1 } from '../../data/version1';
 import { PaymentMethodV1 } from '../../data/version1';
 import { PaymentSystemV1 } from '../../data/version1';
 import { SellerV1 } from '../../data/version1';
@@ -151,7 +150,7 @@ export class PayPalConnector implements IPaymentsConnector {
     }
 
     makePayoutAsync(correlationId: string, account: PaymentSystemAccountV1, 
-        seller: SellerV1, payoutMethod: PayoutMethodV1, description: string, amount: number, currencyCode: string): Promise<PayoutV1> {
+        seller: SellerV1, description: string, amount: number, currencyCode: string): Promise<PayoutV1> {
         throw new Error("Method not implemented.");
     }
 
