@@ -81,8 +81,24 @@ suite('PaymentsHttpServiceV1', () => {
     test('[Stripe] Make/refund payment', (done) => {
         let order: OrderV1 = TestModel.createOrder();
         let payment1: PaymentV1;
+        let paymentMethodId: string;
 
         async.series([
+
+            (callback) => {
+                if (terminate) {
+                    callback();
+                    return;
+                }
+
+                TestModel.findPaymentMethod(STRIPE_ACCESS_KEY, '2', (err, methodId) =>{
+                    assert.isNull(err);
+                    assert.isNotNull(methodId);
+
+                    paymentMethodId = methodId;
+                    callback(); 
+                });
+            },
             (callback) => {
                 if (terminate) {
                     callback();
@@ -101,7 +117,7 @@ suite('PaymentsHttpServiceV1', () => {
                         },
                         order: order,
                         payment_method: {
-                            id: TestModel.PAYMENT_METHOD_ID,
+                            id: paymentMethodId,
                             type: 'card'
                         },
                         amount: order.total,
@@ -156,8 +172,24 @@ suite('PaymentsHttpServiceV1', () => {
     test('[Stripe] Submit/authorize/check/refund payment', (done) => {
         let order: OrderV1 = TestModel.createOrder();
         let payment1: PaymentV1;
-
+        let paymentMethodId: string;
+        
         async.series([
+
+            (callback) => {
+                if (terminate) {
+                    callback();
+                    return;
+                }
+
+                TestModel.findPaymentMethod(STRIPE_ACCESS_KEY, '2', (err, methodId) =>{
+                    assert.isNull(err);
+                    assert.isNotNull(methodId);
+
+                    paymentMethodId = methodId;
+                    callback(); 
+                });
+            },
             (callback) => {
                 if (terminate) {
                     callback();
@@ -176,7 +208,7 @@ suite('PaymentsHttpServiceV1', () => {
                         },
                         order: order,
                         payment_method: {
-                            id: TestModel.PAYMENT_METHOD_ID,
+                            id: paymentMethodId,
                             type: 'card'
                         },
                         amount: order.total,

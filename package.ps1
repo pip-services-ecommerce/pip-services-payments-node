@@ -21,7 +21,7 @@ try {
 
     Start-Sleep -Seconds 10
     Invoke-WebRequest -Uri http://localhost:8080/heartbeat
-    Invoke-WebRequest -Uri http://localhost:8080/v1/payments/make_credit_payment -Method Post
+    Invoke-WebRequest -Uri http://localhost:8080/v1/payments/check_payment -Method Post
 
     Write-Host "The container was successfully built."
     

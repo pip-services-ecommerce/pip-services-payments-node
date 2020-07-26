@@ -32,20 +32,20 @@ suite('PaymentsController', () => {
         controller = new PaymentsController();
         controller.configure(new ConfigParams());
 
-        let stripePlatform = new StripeConnector();
-        stripePlatform.configure(ConfigParams.fromTuples(
+        let stripeConnector = new StripeConnector();
+        stripeConnector.configure(ConfigParams.fromTuples(
             'options.auto_confirm', false,
             'credential.access_key', STRIPE_ACCESS_KEY
         ));
 
         let references = References.fromTuples(
             new Descriptor('pip-services-payments', 'controller', 'default', 'default', '1.0'), controller,
-            new Descriptor('pip-services-payments', 'connector', 'stripe', '*', '1.0'), stripePlatform
+            new Descriptor('pip-services-payments', 'connector', 'stripe', '*', '1.0'), stripeConnector
         );
 
         controller.setReferences(references);
 
-        stripePlatform.open(null, done);
+        stripeConnector.open(null, done);
     });
 
     teardown((done) => {
@@ -59,9 +59,23 @@ suite('PaymentsController', () => {
 
     test('[Stripe] Make payment', (done) => {
         let order: OrderV1 = TestModel.createOrder();
+        let paymentMethodId: string;
 
         async.series([
+            (callback) => {
+                if (terminate) {
+                    callback();
+                    return;
+                }
 
+                TestModel.findPaymentMethod(STRIPE_ACCESS_KEY, '2', (err, methodId) =>{
+                    assert.isNull(err);
+                    assert.isNotNull(methodId);
+
+                    paymentMethodId = methodId;
+                    callback(); 
+                });
+            },
             (callback) => {
                 if (terminate) {
                     callback();
@@ -80,7 +94,7 @@ suite('PaymentsController', () => {
                     },
                     order,
                     {   // payment method
-                        id: TestModel.PAYMENT_METHOD_ID,
+                        id: paymentMethodId,
                         type: 'card'
                     },
                     order.total,
@@ -105,9 +119,24 @@ suite('PaymentsController', () => {
     test('[Stripe] Make submit/authorize payment', (done) => {
         let order: OrderV1 = TestModel.createOrder();
         let payment1: PaymentV1;
+        let paymentMethodId: string;
 
         async.series([
 
+            (callback) => {
+                if (terminate) {
+                    callback();
+                    return;
+                }
+
+                TestModel.findPaymentMethod(STRIPE_ACCESS_KEY, '2', (err, methodId) =>{
+                    assert.isNull(err);
+                    assert.isNotNull(methodId);
+
+                    paymentMethodId = methodId;
+                    callback(); 
+                });
+            },
             (callback) => {
                 if (terminate) {
                     callback();
@@ -126,7 +155,7 @@ suite('PaymentsController', () => {
                     },
                     order,
                     {   // payment method
-                        id: TestModel.PAYMENT_METHOD_ID,
+                        id: paymentMethodId,
                         type: 'card'
                     },
                     order.total,
