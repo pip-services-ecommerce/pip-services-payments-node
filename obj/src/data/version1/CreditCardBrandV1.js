@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CreditCardBrandV1 = void 0;
 class CreditCardBrandV1 {
 }
 exports.CreditCardBrandV1 = CreditCardBrandV1;

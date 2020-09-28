@@ -10,6 +10,7 @@ export class TestModel
     {
         let client = new Stripe(stripeKey, {
             apiVersion: "2020-03-02"
+            //apiVersion: "2020-08-27"
         });
 
         this.findPaymentMethodAsync(client, customerId).then(paymentMethodId => {

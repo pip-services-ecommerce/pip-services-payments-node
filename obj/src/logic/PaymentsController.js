@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PaymentsController = void 0;
 let async = require('async');
 const pip_services3_commons_node_1 = require("pip-services3-commons-node");
 const pip_services3_commons_node_2 = require("pip-services3-commons-node");
@@ -30,26 +31,32 @@ class PaymentsController {
         callback(null);
     }
     close(correlationId, callback) {
-        if (this._paypalConnector.isOpen) {
-            this._paypalConnector.close(correlationId, (err) => {
-                if (err != null) {
-                    if (callback)
+        async.series([
+            (callback) => {
+                if (this._paypalConnector.isOpen) {
+                    this._paypalConnector.close(correlationId, (err) => {
+                        this._paypalConnector = null;
                         callback(err);
-                    return;
+                    });
                 }
-                this._paypalConnector = null;
-            });
-        }
-        if (this._stripeConnector.isOpen) {
-            this._stripeConnector.close(correlationId, (err) => {
-                if (err != null) {
-                    if (callback)
+                else {
+                    callback(null);
+                }
+            },
+            (callback) => {
+                if (this._stripeConnector.isOpen) {
+                    this._stripeConnector.close(correlationId, (err) => {
+                        this._stripeConnector = null;
                         callback(err);
-                    return;
+                    });
                 }
-                this._stripeConnector = null;
-            });
-        }
+                else {
+                    callback(null);
+                }
+            }
+        ], (err) => {
+            callback(err);
+        });
     }
     makePayment(correlationId, system, account, buyer, order, paymentMethod, amount, currencyCode, callback) {
         var connector = this.getSystemConnector(correlationId, system, callback);

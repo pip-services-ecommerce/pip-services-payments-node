@@ -19,7 +19,7 @@
     "pip-services3-mongodb-node": "^3.2.*",
     "pip-services3-rpc-node": "^3.2.*",
     "restify-clients": "^3.0.0",
-    "stripe": "^8.68.0"
+    "stripe": "8.68.0"
   },
   "devDependencies": {
     "@types/async": "^2.0.49",

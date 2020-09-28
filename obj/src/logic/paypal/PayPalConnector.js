@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PayPalConnector = void 0;
 let _ = require('lodash');
 let async = require('async');
 const pip_services3_components_node_1 = require("pip-services3-components-node");
@@ -50,7 +51,7 @@ class PayPalConnector {
     makePaymentAsync(correlationId, account, buyer, order, paymentMethod, amount, currencyCode) {
         return __awaiter(this, void 0, void 0, function* () {
             let client = this.createPaymentSystemClient(correlationId, account);
-            order = (order !== null && order !== void 0 ? order : { total: amount, currency_code: currencyCode, id: pip_services3_commons_node_1.IdGenerator.nextLong() });
+            order = order !== null && order !== void 0 ? order : { total: amount, currency_code: currencyCode, id: pip_services3_commons_node_1.IdGenerator.nextLong() };
             let payOrder = this.createPayPalOrder(order);
             const request = new this._sdk.orders.OrdersCreateRequest();
             request.headers["prefer"] = "return=representation";
@@ -72,7 +73,7 @@ class PayPalConnector {
     submitPaymentAsync(correlationId, account, buyer, order, paymentMethod, amount, currencyCode) {
         return __awaiter(this, void 0, void 0, function* () {
             let client = this.createPaymentSystemClient(correlationId, account);
-            order = (order !== null && order !== void 0 ? order : { total: amount, currency_code: currencyCode, id: pip_services3_commons_node_1.IdGenerator.nextLong() });
+            order = order !== null && order !== void 0 ? order : { total: amount, currency_code: currencyCode, id: pip_services3_commons_node_1.IdGenerator.nextLong() };
             let payOrder = this.createPayPalOrder(order);
             const request = new this._sdk.orders.OrdersCreateRequest();
             request.headers["prefer"] = "return=representation";

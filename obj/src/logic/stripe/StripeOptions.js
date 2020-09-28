@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.StripeOptions = void 0;
 class StripeOptions {
     constructor(config) {
         /// The amount of times a request should be retried.

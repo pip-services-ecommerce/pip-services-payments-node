@@ -67,27 +67,33 @@ export class PaymentsController implements IPaymentsController, IConfigurable, I
     }
 
     public close(correlationId: string, callback: (err: any) => void): void {
-        if (this._paypalConnector.isOpen) {
-            this._paypalConnector.close(correlationId, (err) => {
-                if (err != null) {
-                    if (callback) callback(err);
-                    return;
+
+        async.series([
+            (callback) => {
+                if (this._paypalConnector.isOpen) {
+                    this._paypalConnector.close(correlationId, (err) => {
+                        this._paypalConnector = null;
+                        callback(err);
+                    });
+                } else {
+                    callback(null);
                 }
-
-                this._paypalConnector = null;
-            });
-        }
-
-        if (this._stripeConnector.isOpen) {
-            this._stripeConnector.close(correlationId, (err) => {
-                if (err != null) {
-                    if (callback) callback(err);
-                    return;
+            },
+            (callback) => {
+                if (this._stripeConnector.isOpen) {
+                    this._stripeConnector.close(correlationId, (err) => {
+                        this._stripeConnector = null;
+                        callback(err);
+                    });
+                } else {
+                    callback(null);
                 }
+            }
 
-                this._stripeConnector = null;
-            });
-        }
+        ], (err) => {
+            callback(err);
+        })
+
     }
 
     public makePayment(correlationId: string, system: string, account: PaymentSystemAccountV1,

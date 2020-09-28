@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.StripeConnector = void 0;
 const pip_services3_components_node_1 = require("pip-services3-components-node");
 const pip_services3_commons_node_1 = require("pip-services3-commons-node");
 const stripe_1 = require("stripe");
@@ -65,7 +66,7 @@ class StripeConnector {
             if (!customer)
                 throw new pip_services3_commons_node_1.BadRequestException(correlationId, 'ERR_CUSTOMER_NOT_FOUND', 'Customer is not found by id')
                     .withDetails('buyer', buyer);
-            order = (order !== null && order !== void 0 ? order : { total: amount, currency_code: currencyCode, id: pip_services3_commons_node_1.IdGenerator.nextLong() });
+            order = order !== null && order !== void 0 ? order : { total: amount, currency_code: currencyCode, id: pip_services3_commons_node_1.IdGenerator.nextLong() };
             var intent = yield client.paymentIntents.create({
                 amount: Math.trunc(order.total * 100),
                 currency: order.currency_code,

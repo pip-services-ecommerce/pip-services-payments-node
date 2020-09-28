@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PaymentMethodTypeV1 = void 0;
 class PaymentMethodTypeV1 {
 }
 exports.PaymentMethodTypeV1 = PaymentMethodTypeV1;
