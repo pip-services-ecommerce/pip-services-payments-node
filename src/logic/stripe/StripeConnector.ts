@@ -301,10 +301,15 @@ export class StripeConnector implements IPaymentsConnector {
                     mcc: '1520',
                     url: 'http://unknown.com/'
                 },
-                requested_capabilities: [
-                    //'card_payments',
-                    'transfers',
-                ],
+                capabilities: {
+                    transfers: {
+                        requested: true
+                    }
+                },
+                // requested_capabilities: [
+                //     //'card_payments',
+                //     'transfers',
+                // ],
                 tos_acceptance: {
                     ip: seller.ip_address,
                     date: Math.floor(Date.now() / 1000),

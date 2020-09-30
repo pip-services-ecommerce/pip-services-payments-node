@@ -4,29 +4,24 @@ import { OrderV1 } from "../../src/data/version1/OrderV1";
 import { OrderItemV1 } from "../../src/data/version1/OrderItemV1";
 import Stripe from "stripe";
 
-export class TestModel
-{
-    static findPaymentMethod(stripeKey: string, customerId: string, callback: (err: any, paymentMethodId) => void) : void
-    {
+export class TestModel {
+    static findPaymentMethod(stripeKey: string, customerId: string, callback: (err: any, paymentMethodId) => void): void {
         let client = new Stripe(stripeKey, {
-            apiVersion: "2020-03-02"
-            //apiVersion: "2020-08-27"
+            apiVersion: "2020-08-27"
         });
 
         this.findPaymentMethodAsync(client, customerId).then(paymentMethodId => {
             if (callback) callback(null, paymentMethodId);
         }).catch(err => {
             if (callback) callback(err, null);
-        })    
+        })
     }
 
-    private static async findPaymentMethodAsync(client: Stripe, customerId: string) : Promise<string>
-    {
+    private static async findPaymentMethodAsync(client: Stripe, customerId: string): Promise<string> {
         var customer = await this.findItem({}, p => client.customers.list(p), x => x.metadata && x.metadata['customer_id'] == customerId, x => x.id);
-        if (customer)
-        {
+        if (customer) {
             let params: Stripe.PaymentMethodListParams = {
-                customer : customer.id,
+                customer: customer.id,
                 type: 'card'
             };
 
@@ -45,7 +40,7 @@ export class TestModel
         do {
             params.limit = 100;
             params.starting_after = undefined;
-            
+
             if (page && page.data.length > 0)
                 params.starting_after = getId(page.data[page.data.length - 1]);
 
@@ -60,14 +55,13 @@ export class TestModel
         return null;
     }
 
-    static createOrder() : OrderV1
-    {
+    static createOrder(): OrderV1 {
         let order = new OrderV1();
         order.id = IdGenerator.nextLong();
         order.currency_code = 'USD';
         order.items = [];
 
-        let itemsCount = RandomInteger.nextInteger(1, 10); 
+        let itemsCount = RandomInteger.nextInteger(1, 10);
         let total = 0;
 
         for (let index = 0; index < itemsCount; index++) {
@@ -82,13 +76,12 @@ export class TestModel
         return order;
     }
 
-    static createOrderItem() : OrderItemV1
-    {
+    static createOrderItem(): OrderItemV1 {
         let quantity = RandomInteger.nextInteger(1, 5);
         let price = Math.round(RandomDouble.nextDouble(5, 30) * 100) / 100;
         let total = quantity * price;
 
-        let orderItem : OrderItemV1 = 
+        let orderItem: OrderItemV1 =
         {
             product_id: IdGenerator.nextLong(),
             product_name: RandomText.word(),
